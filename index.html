@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MR GRAM - ADMIN EDITION</title>
+    <style>
+        :root {
+            --bg: #000;
+            --accent: #007AFF;
+            --card: rgba(28, 28, 30, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #fff;
+            --sub: rgba(255, 255, 255, 0.4);
+            --glass: blur(30px) saturate(200%);
+        }
+
+        /* Sahifa o'ngga-chapga qimirlamasligi uchun */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        html, body { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: var(--bg); color: var(--text); 
+            font-family: -apple-system, system-ui, sans-serif; 
+            overflow-x: hidden; position: fixed; 
+        }
+
+        #splash {
+            position: fixed; inset: 0; background: #000; z-index: 10000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .mg-logo {
+            width: 100px; height: 100px; background: var(--accent); border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 42px; font-weight: 900; box-shadow: 0 0 50px rgba(0,122,255,0.5);
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); opacity: 0.8; } }
+
+        .app-shell { width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .header { padding: 60px 25px 15px; display: flex; justify-content: space-between; align-items: flex-end; }
+        
+        .tabs { display: flex; background: #1c1c1e; margin: 10px 20px; border-radius: 14px; padding: 3px; position: relative; }
+        .tab { flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; z-index: 2; color: var(--sub); }
+        .tab.active { color: #fff; }
+        .tab-indicator { position: absolute; top: 3px; left: 3px; bottom: 3px; width: calc(50% - 3px); background: #3a3a3c; border-radius: 11px; transition: 0.25s cubic-bezier(0.2, 1, 0.2, 1); }
+
+        #listArea { flex: 1; overflow-y: auto; padding: 10px 20px 100px; -webkit-overflow-scrolling: touch; }
+        
+        .user-card { 
+            display: flex; align-items: center; gap: 15px; padding: 16px;
+            background: var(--card); border-radius: 24px; margin-bottom: 12px;
+            border: 1px solid var(--border); backdrop-filter: var(--glass);
+            transition: transform 0.2s cubic-bezier(0.2, 1, 0.2, 1);
+            touch-action: pan-y; will-change: transform;
+        }
+        
+        .avatar { width: 55px; height: 55px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; color: #fff; }
+
+        .admin-del-btn {
+            background: #ff3b30; color: white; border: none; padding: 10px 14px;
+            border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer;
+        }
+
+        #chatView { position: fixed; inset: 0; background: #000; z-index: 2000; display: none; flex-direction: column; transform: translateX(100%); transition: 0.35s cubic-bezier(0.1, 1, 0.1, 1); }
+        #chatView.active { display: flex; transform: translateX(0); }
+        #chatMsgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; font-size: 15px; line-height: 1.4; position: relative; }
+        .msg.me { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+        .msg.them { align-self: flex-start; background: #262629; border-bottom-left-radius: 4px; }
+        
+        #authPage, #settingsView { position: fixed; inset: 0; background: #000; z-index: 9000; display: none; align-items: center; justify-content: center; padding: 25px; }
+        .modal-card { width: 100%; max-width: 360px; background: var(--card); padding: 35px; border-radius: 35px; border: 1px solid var(--border); backdrop-filter: var(--glass); text-align: center; }
+        input { width: 100%; background: #1c1c1e; border: 1px solid var(--border); padding: 16px; border-radius: 16px; color: #fff; margin-bottom: 12px; }
+        .btn { width: 100%; padding: 16px; border-radius: 16px; border: none; background: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
+
+        .input-bar { padding: 15px 20px 40px; display: flex; gap: 10px; background: rgba(0,0,0,0.8); backdrop-filter: var(--glass); border-top: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+
+    <div id="splash"><div class="mg-logo">MG</div></div>
+
+    <div id="authPage">
+        <div class="modal-card">
+            <h1>MR GRAM</h1>
+            <div id="regBox"><input type="text" id="regName" placeholder="Ismingiz"></div>
+            <input type="text" id="regUser" placeholder="Username">
+            <input type="password" id="regPass" placeholder="Parol">
+            <button class="btn" onclick="handleAuth()">DAVOM ETISH</button>
+            <p onclick="toggleAuth()" id="switchBtn" style="color:var(--accent); margin-top:20px; font-size:14px; cursor:pointer">Kirish rejimi</p>
+        </div>
+    </div>
+
+    <div class="app-shell">
+        <div class="header">
+            <div><b id="meName" style="font-size:26px">---</b><br><small id="meUser" style="color:var(--accent)">@username</small></div>
+            <div onclick="openSettings()" style="background:#1c1c1e; padding:10px 15px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer">SOZLAMALAR</div>
+        </div>
+        <div class="tabs">
+            <div id="indicator" class="tab-indicator"></div>
+            <div class="tab active" id="tab0" onclick="switchTab('all', 0)">HAMMASI</div>
+            <div class="tab" id="tab1" onclick="switchTab('my', 50)">KONTAKTLAR</div>
+        </div>
+        <div id="listArea"></div>
+    </div>
+
+    <div id="chatView">
+        <div class="header" style="border-bottom:1px solid var(--border); padding-top:55px">
+            <div onclick="closeChat()" style="color:var(--accent); font-weight:700; cursor:pointer">← ORQAGA</div>
+            <b id="chatTitle">---</b>
+            <div style="width:50px"></div>
+        </div>
+        <div id="chatMsgs"></div>
+        <div class="input-bar">
+            <input type="text" id="msgInput" placeholder="Xabar yozing...">
+            <button id="sendBtn" onclick="sendMsg()" class="btn" style="width:55px; height:55px; border-radius:50%; padding:0">↑</button>
+        </div>
+    </div>
+
+    <div id="settingsView">
+        <div class="modal-card">
+            <h2>Profil</h2>
+            <input type="text" id="newName" placeholder="Yangi ism">
+            <button class="btn" onclick="updateProfile()" style="margin-bottom:10px">Saqlash</button>
+            <button class="btn" onclick="logout()" style="background:#ff3b30">Chiqish</button>
+            <p onclick="closeSettings()" style="margin-top:20px; color:var(--sub); cursor:pointer">Yopish</p>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyBqrgTztsCMFP99ZrIyOMAeqV-EiKB7wBE", authDomain: "mrgram-cbd1d.firebaseapp.com", projectId: "mrgram-cbd1d", appId: "1:1078968830234:web:3d119ea0ed3e5fbb9f84a3" };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let me = JSON.parse(localStorage.getItem('mrgram_user'));
+    let currentMode = localStorage.getItem('mg_tab') || 'all';
+    let editingMsgId = null;
+
+    function saveState(view, data = null) {
+        localStorage.setItem('mg_state', JSON.stringify({ view, data, tab: currentMode }));
+    }
+
+    window.onload = async () => {
+        if(!me) {
+            document.getElementById('splash').style.display = 'none';
+            document.getElementById('authPage').style.display = 'flex';
+        } else {
+            document.getElementById('meName').innerText = me.name;
+            document.getElementById('meUser').innerText = me.username;
+            
+            const p = currentMode === 'all' ? 0 : 50;
+            document.getElementById('indicator').style.left = p + '%';
+            document.getElementById('tab0').classList.toggle('active', currentMode === 'all');
+            document.getElementById('tab1').classList.toggle('active', currentMode === 'my');
+
+            await renderList();
+            
+            const saved = JSON.parse(localStorage.getItem('mg_state'));
+            if(saved) {
+                if(saved.view === 'chat' && saved.data) openChat(saved.data);
+                if(saved.view === 'settings') openSettings();
+            }
+
+            setTimeout(() => {
+                document.getElementById('splash').style.opacity = '0';
+                setTimeout(() => document.getElementById('splash').style.display = 'none', 500);
+            }, 1000);
+        }
+    };
+
+    function initSwipe(card, uid) {
+        if(me.isAdmin) return; // Admin swipe qilmaydi
+        let startX = 0, currentX = 0;
+        card.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; card.style.transition = 'none'; }, {passive: true});
+        card.addEventListener('touchmove', (e) => {
+            currentX = e.touches[0].clientX - startX;
+            if((currentMode === 'all' && currentX < 0) || (currentMode === 'my' && currentX > 0)) {
+                card.style.transform = `translateX(${currentX}px)`;
+            }
+        }, {passive: true});
+        card.addEventListener('touchend', () => {
+            card.style.transition = '0.3s cubic-bezier(0.2, 1, 0.2, 1)';
+            if(Math.abs(currentX) > window.innerWidth / 2.5) {
+                card.style.transform = currentX < 0 ? 'translateX(-120%)' : 'translateX(120%)';
+                toggleContact(uid);
+            } else card.style.transform = 'translateX(0)';
+            currentX = 0;
+        });
+    }
+
+    async function toggleContact(id) {
+        const ref = doc(db, "users", me.uid, "contacts", "list");
+        const snap = await getDoc(ref);
+        let list = snap.exists() ? snap.data().uids : [];
+        list = list.includes(id) ? list.filter(x => x !== id) : [...list, id];
+        await setDoc(ref, { uids: list });
+    }
+
+    window.switchTab = (m, p) => {
+        currentMode = m;
+        localStorage.setItem('mg_tab', m);
+        document.getElementById('indicator').style.left = p + '%';
+        document.getElementById('tab0').classList.toggle('active', m === 'all');
+        document.getElementById('tab1').classList.toggle('active', m === 'my');
+        saveState('home');
+        renderList();
+    };
+
+    async function renderList() {
+        const area = document.getElementById('listArea');
+        const contactSnap = await getDoc(doc(db, "users", me.uid, "contacts", "list"));
+        const myIds = contactSnap.exists() ? contactSnap.data().uids : [];
+
+        onSnapshot(collection(db, "users"), (snap) => {
+            area.innerHTML = "";
+            snap.forEach(d => {
+                const u = d.data();
+                if(u.uid === 'admin' || u.uid === me.uid) return; // Admin va o'zing ko'rinmaysan
+
+                const isSaved = myIds.includes(u.uid);
+                if((currentMode === 'all' && !isSaved) || (currentMode === 'my' && isSaved)) {
+                    const card = document.createElement('div');
+                    card.className = 'user-card';
+                    
+                    let adminBtn = me.isAdmin ? `<button class="admin-del-btn" onclick="deleteUser('${u.uid}', event)">O'CHIRISH</button>` : '';
+
+                    card.innerHTML = `
+                        <div class="avatar" style="background:${u.color}">${u.name[0]}</div>
+                        <div style="flex:1"><b>${u.name}</b><br><small style="opacity:0.4">${u.username}</small></div>
+                        ${adminBtn}`;
+                    
+                    card.onclick = () => openChat(u);
+                    initSwipe(card, u.uid);
+                    area.appendChild(card);
+                }
+            });
+        });
+    }
+
+    window.deleteUser = async (uid, e) => {
+        e.stopPropagation();
+        if(confirm(uid + " butunlay o'chirilsinmi?")) {
+            await deleteDoc(doc(db, "users", uid));
+        }
+    };
+
+    window.handleAuth = async () => {
+        const u = document.getElementById('regUser').value.toLowerCase().trim();
+        const p = document.getElementById('regPass').value;
+        const n = document.getElementById('regName').value;
+
+        if(u === 'admin' && p === '123456') {
+            me = { uid: 'admin', name: 'ADMIN', username: '@admin', isAdmin: true, color: '#ff3b30' };
+            finish(); return;
+        }
+
+        if(loginMode) {
+            const s = await getDoc(doc(db, "users", u));
+            if(s.exists() && s.data().pass === p) { me = s.data(); finish(); }
+            else alert("Xato!");
+        } else {
+            if(u === 'admin') { alert("Band!"); return; }
+            const data = { uid: u, name: n || u, username: '@' + u, pass: p, color: `hsl(${Math.random()*360},70%,50%)` };
+            await setDoc(doc(db, "users", u), data); me = data; finish();
+        }
+    };
+
+    function finish() { localStorage.setItem('mrgram_user', JSON.stringify(me)); location.reload(); }
+    window.logout = () => { localStorage.clear(); location.reload(); };
+    
+    // Chat, Settings va boshqa funksiyalar (o'zgarmagan)
+    let curChat = null;
+    window.openChat = (target) => {
+        curChat = [me.uid, target.uid].sort().join('_');
+        document.getElementById('chatTitle').innerText = target.name;
+        document.getElementById('chatView').classList.add('active');
+        saveState('chat', target);
+        onSnapshot(query(collection(db, "chats", curChat, "messages"), orderBy("time", "asc")), snap => {
+            const b = document.getElementById('chatMsgs'); b.innerHTML = "";
+            snap.forEach(d => {
+                const m = d.data(); const isMe = m.from === me.uid;
+                const msgEl = document.createElement('div');
+                msgEl.className = `msg ${isMe?'me':'them'}`;
+                msgEl.innerHTML = `${m.txt} ${m.edited ? '<small>tahrirlandi</small>':''}`;
+                if(isMe) {
+                    let timer;
+                    msgEl.onclick = () => { editingMsgId = d.id; document.getElementById('msgInput').value = m.txt; document.getElementById('sendBtn').innerText = 'OK'; };
+                    msgEl.onmousedown = () => { timer = setTimeout(() => { if(confirm("O'chirilsinmi?")) deleteDoc(doc(db, "chats", curChat, "messages", d.id)); }, 800); };
+                    msgEl.onmouseup = () => clearTimeout(timer);
+                    msgEl.ontouchstart = msgEl.onmousedown; msgEl.ontouchend = msgEl.onmouseup;
+                }
+                b.appendChild(msgEl);
+            });
+            b.scrollTop = b.scrollHeight;
+        });
+    };
+
+    window.sendMsg = async () => {
+        const i = document.getElementById('msgInput'); if(!i.value) return;
+        if(editingMsgId) {
+            await updateDoc(doc(db, "chats", curChat, "messages", editingMsgId), { txt: i.value, edited: true });
+            editingMsgId = null; document.getElementById('sendBtn').innerText = '↑';
+        } else {
+            await addDoc(collection(db, "chats", curChat, "messages"), { txt: i.value, from: me.uid, time: serverTimestamp() });
+        }
+        i.value = "";
+    };
+
+    let loginMode = false;
+    window.toggleAuth = () => { loginMode = !loginMode; document.getElementById('regBox').style.display = loginMode ? 'none' : 'block'; document.getElementById('switchBtn').innerText = loginMode ? "Ro'yxatdan o'tish" : "Tizimga kirish"; };
+    window.openSettings = () => { document.getElementById('settingsView').style.display = 'flex'; saveState('settings'); };
+    window.closeSettings = () => { document.getElementById('settingsView').style.display = 'none'; saveState('home'); };
+    window.closeChat = () => { document.getElementById('chatView').classList.remove('active'); saveState('home'); };
+    window.updateProfile = async () => {
+        const n = document.getElementById('newName').value; if(!n) return;
+        await updateDoc(doc(db, "users", me.uid), { name: n });
+        me.name = n; localStorage.setItem('mrgram_user', JSON.stringify(me)); location.reload();
+    };
+</script>
+</body>
+</html>
