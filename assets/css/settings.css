@@ -1,16 +1,22 @@
-/* assets/css/settings.css */
+/* assets/css/settings.css - MR GRAM Settings Styles */
+
 .settings-container {
     display: flex;
     height: 100%;
     background: var(--bg);
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
 }
 
 .settings-sidebar {
     width: 280px;
     background: var(--card);
+    backdrop-filter: blur(20px);
     border-right: 0.5px solid var(--border);
     padding: 20px;
     overflow-y: auto;
+    flex-shrink: 0;
 }
 
 .settings-sidebar h3 {
@@ -18,6 +24,8 @@
     padding-bottom: 12px;
     border-bottom: 0.5px solid var(--border);
     font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
 }
 
 .settings-tab {
@@ -32,15 +40,27 @@
     font-size: 15px;
     transition: all 0.2s;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .settings-tab:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(4px);
 }
 
 .settings-tab.active {
     background: var(--accent);
     color: white;
+}
+
+.settings-tab svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
 }
 
 .settings-content {
@@ -59,12 +79,19 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .settings-section {
     background: var(--card);
+    backdrop-filter: blur(20px);
     border-radius: 20px;
     padding: 20px;
     margin-bottom: 20px;
@@ -76,6 +103,10 @@
     padding-bottom: 12px;
     border-bottom: 0.5px solid var(--border);
     font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .settings-row {
@@ -111,6 +142,15 @@
     color: white;
     font-size: 14px;
     width: 200px;
+    outline: none;
+}
+
+.settings-row input[type="text"]:focus,
+.settings-row input[type="password"]:focus,
+.settings-row select:focus,
+.settings-row textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0, 210, 255, 0.2);
 }
 
 .settings-row textarea {
@@ -168,6 +208,7 @@ input:checked + .slider:before {
 .radio-group {
     display: flex;
     gap: 20px;
+    flex-wrap: wrap;
 }
 
 .radio-group label {
@@ -178,6 +219,50 @@ input:checked + .slider:before {
     font-size: 14px;
 }
 
+.radio-group input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 24px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: scale(0.98);
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn-small {
+    background: var(--accent);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.btn-small:active {
+    transform: scale(0.95);
+}
+
 .btn-danger {
     background: #ff3b30;
 }
@@ -185,21 +270,202 @@ input:checked + .slider:before {
 .btn-danger:hover {
     background: #d63030;
 }
+
 /* Settings SVG stillari */
 .settings-container svg {
-width: 18px;
-height: 18px;
-stroke: currentColor;
-stroke-width: 1.8;
-fill: none;
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
 }
 
 .settings-tab svg {
-margin-right: 8px;
+    margin-right: 8px;
 }
 
 .settings-tab:hover svg {
-transform: scale(1.05);
-transition: transform 0.2s;
+    transform: scale(1.05);
+    transition: transform 0.2s;
 }
 
+/* Responsive */
+@media (max-width: 768px) {
+    .settings-container {
+        flex-direction: column;
+    }
+    
+    .settings-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 0.5px solid var(--border);
+        padding: 16px;
+        overflow-x: auto;
+        white-space: nowrap;
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+    }
+    
+    .settings-sidebar h3 {
+        display: none;
+    }
+    
+    .settings-tab {
+        width: auto;
+        display: inline-flex;
+        white-space: nowrap;
+    }
+    
+    .settings-content {
+        padding: 16px;
+    }
+    
+    .settings-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .settings-row input[type="text"],
+    .settings-row input[type="password"],
+    .settings-row select {
+        width: 100%;
+    }
+    
+    .radio-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-sidebar {
+        padding: 12px;
+        gap: 6px;
+    }
+    
+    .settings-tab {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .settings-content {
+        padding: 12px;
+    }
+    
+    .settings-section {
+        padding: 16px;
+    }
+    
+    .settings-section h4 {
+        font-size: 15px;
+    }
+    
+    .settings-label {
+        font-size: 14px;
+    }
+}
+
+/* Scrollbar */
+.settings-sidebar::-webkit-scrollbar,
+.settings-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.settings-sidebar::-webkit-scrollbar-track,
+.settings-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.settings-sidebar::-webkit-scrollbar-thumb,
+.settings-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+/* Vault Panel Styles */
+.vault-panel {
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 20px;
+    border: 0.5px solid var(--border);
+}
+
+.vault-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 0.5px solid var(--border);
+}
+
+.vault-panel-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.vault-contacts-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.vault-contact-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 14px;
+    margin-bottom: 8px;
+}
+
+.vault-contact-info {
+    flex: 1;
+}
+
+.vault-contact-name {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.vault-contact-id {
+    font-size: 11px;
+    opacity: 0.5;
+    font-family: monospace;
+}
+
+.vault-contact-delete {
+    background: none;
+    border: none;
+    color: #ff3b30;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.vault-contact-delete:active {
+    background: rgba(255, 59, 48, 0.2);
+    transform: scale(0.95);
+}
+
+.vault-add-btn {
+    width: 100%;
+    background: rgba(0, 210, 255, 0.1);
+    border: 1px dashed rgba(0, 210, 255, 0.3);
+    padding: 12px;
+    border-radius: 14px;
+    color: var(--accent);
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+}
+
+.vault-add-btn:active {
+    transform: scale(0.98);
+    background: rgba(0, 210, 255, 0.2);
+}
