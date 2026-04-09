@@ -1,7 +1,7 @@
-// assets/messages/messages.js
+// assets/js/messages.js (to'liq - read receipts qo'shilgan)
 
 import { db } from "./config/firebase-config.js";
-import { collection, doc, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, addDoc, updateDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { showToast, escapeHtml } from "./ui-helpers.js";
 
 let currentEditingMsgId = null;
@@ -37,6 +37,33 @@ export function clearPendingMedia() {
     pendingVoiceUrl = null;
     pendingVideoUrl = null;
     pendingFileData = null;
+}
+
+// ========== READ RECEIPTS ==========
+export async function markMessageAsRead(chatId, messageId, userId) {
+    try {
+        const messageRef = doc(db, "chats", chatId, "messages", messageId);
+        const messageSnap = await getDoc(messageRef);
+        
+        if (messageSnap.exists()) {
+            const data = messageSnap.data();
+            if (data.from !== userId) {
+                await updateDoc(messageRef, {
+                    read: true,
+                    readAt: serverTimestamp()
+                });
+            }
+        }
+    } catch (err) {
+        console.error("Mark as read error:", err);
+    }
+}
+
+export function getReadStatusIcon(message) {
+    if (!message.read) {
+        return `<span class="read-status single-check">✓</span>`;
+    }
+    return `<span class="read-status double-check">✓✓</span>`;
 }
 
 // ========== TAHRIRLASH ==========
@@ -117,7 +144,6 @@ export function editMessage(msgId, message, chatId) {
     showToast("✏️ Xabarni tahrirlash...");
 }
 
-// ========== TAHRIRLASHNI TOZALASH ==========
 export function clearEditing() {
     currentEditingMsgId = null;
     currentEditingChat = null;
@@ -129,11 +155,9 @@ export function clearEditing() {
         sendBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>`;
     }
     
-    // Input ni tozalash
     const msgInput = document.getElementById('msgInput');
     if(msgInput) msgInput.value = '';
     
-    // Preview panellarni yopish
     const panels = ['imagePreviewPanel', 'videoPreviewPanel', 'voicePreviewPanel'];
     panels.forEach(id => {
         const panel = document.getElementById(id);
@@ -165,6 +189,7 @@ function addSendingMessage(chatId, me, messageData) {
         const fileIcon = getFileIcon(messageData.file.type);
         contentHtml += `<div class="file-loading"><div class="spinner-small"></div><span>${fileIcon} ${messageData.file.name} yuklanmoqda...</span><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div></div>`;
     }
+    contentHtml += `<div class="msg-footer"><span class="read-status sending">⌛</span></div>`;
     contentHtml += `</div>`;
     
     msgDiv.innerHTML = `<div class="msg-header"><span class="msg-time">⏳ Yuborilmoqda...</span></div>${contentHtml}`;
@@ -245,7 +270,11 @@ export async function sendMessage(chatId, me, onVideoProgress = null) {
             editingMsgId = null;
             showToast("✅ Xabar tahrirlandi");
         } else {
-            let finalMessageData = { from: me.uid, time: serverTimestamp() };
+            let finalMessageData = { 
+                from: me.uid, 
+                time: serverTimestamp(),
+                read: false  // READ RECEIPTS: boshida o'qilmagan
+            };
             if(msgText) finalMessageData.txt = msgText;
             if(hasImage) finalMessageData.image = pendingImageUrl;
             if(hasVoice) finalMessageData.voice = pendingVoiceUrl;
@@ -267,7 +296,6 @@ export async function sendMessage(chatId, me, onVideoProgress = null) {
         
         removeSendingMessage(tempId);
         
-        // Input va preview larni tozalash
         const msgInput = document.getElementById('msgInput');
         if(msgInput) msgInput.value = "";
         clearPendingMedia();
@@ -283,7 +311,6 @@ export async function sendMessage(chatId, me, onVideoProgress = null) {
             sendBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>`;
         }
         
-        // Voice button ni qayta ko'rsatish
         const voiceBtn = document.getElementById('voiceBtn');
         if(voiceBtn && sendBtn) {
             voiceBtn.style.display = 'flex';

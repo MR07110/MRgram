@@ -1,8 +1,8 @@
 // assets/js/chat.js
 
 import { db } from "./config/firebase-config.js";
-import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { sendMessage, setCurrentChat, clearEditing, getPendingImage, getPendingVideo, getPendingVoice, getPendingFile, setPendingImage, setPendingVideo, setPendingVoice, setPendingFile } from "./messages.js";
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { sendMessage, setCurrentChat, clearEditing, getPendingImage, getPendingVideo, getPendingVoice, getPendingFile, setPendingImage, setPendingVideo, setPendingVoice, setPendingFile, markMessageAsRead, getReadStatusIcon } from "./messages.js";
 import { stopAllVoice, initVoice } from "./voice.js";
 import { escapeHtml, viewFullImage, showToast, getAvatarColorFromUsername, getAvatarInitial } from "./ui-helpers.js";
 import { startCall, acceptCall, rejectCall, listenForIncomingCalls, initCallElements, endCall } from "./call.js";
@@ -19,6 +19,12 @@ let currentChatType = "private";
 
 let videoProgressCallback = null;
 let incomingCallUnsubscribe = null;
+
+// Typing Indicator
+let typingTimeout = null;
+let typingUnsubscribe = null;
+let replyToMessageData = null;
+let forwardedMessageData = null;
 
 export function initChat(user, database) {
     me = user;
@@ -162,7 +168,8 @@ async function sendVoiceMessage(audioBlob) {
             const messageData = {
                 from: me.uid,
                 time: serverTimestamp(),
-                voice: url
+                voice: url,
+                read: false
             };
             await addDoc(collection(dbInstance, "chats", currentChat, "messages"), messageData);
             showToast("Ovozli xabar yuborildi");
@@ -179,7 +186,7 @@ async function handleMediaUpload() {
     const hasVoice = getPendingVoice() !== null;
     const hasFile = getPendingFile() !== null;
 
-    let messageData = { from: me.uid, time: serverTimestamp() };
+    let messageData = { from: me.uid, time: serverTimestamp(), read: false };
     const msgInput = document.getElementById("msgInput");
     const msgText = msgInput ? msgInput.value.trim() : "";
     if (msgText) messageData.txt = msgText;
@@ -217,6 +224,326 @@ async function handleMediaUpload() {
     }
 }
 
+// ========== TYPING INDICATOR ==========
+function sendTypingStatus(chatId, userId, isTyping) {
+    if (!chatId || !userId) return;
+    
+    const typingRef = doc(dbInstance, "typing", chatId);
+    const data = {
+        [userId]: isTyping ? serverTimestamp() : null
+    };
+    
+    updateDoc(typingRef, data).catch(() => {
+        setDoc(typingRef, data).catch(() => {});
+    });
+}
+
+function listenForTyping(chatId, currentUserId, callback) {
+    if (!chatId) return;
+    
+    const typingRef = doc(dbInstance, "typing", chatId);
+    return onSnapshot(typingRef, (snap) => {
+        if (snap.exists()) {
+            const data = snap.data();
+            let isTyping = false;
+            const now = Date.now();
+            
+            for (const [userId, timestamp] of Object.entries(data)) {
+                if (userId !== currentUserId && timestamp) {
+                    const time = timestamp.seconds ? timestamp.seconds * 1000 : timestamp;
+                    if (now - time < 3000) {
+                        isTyping = true;
+                        break;
+                    }
+                }
+            }
+            callback(isTyping);
+        } else {
+            callback(false);
+        }
+    });
+}
+
+function initTypingIndicator(chatId, targetName) {
+    const msgInput = document.getElementById('msgInput');
+    if (!msgInput) return;
+    
+    let lastTypingTime = 0;
+    
+    const inputHandler = () => {
+        const now = Date.now();
+        if (now - lastTypingTime > 1000) {
+            lastTypingTime = now;
+            sendTypingStatus(chatId, me.uid, true);
+            
+            if (typingTimeout) clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                sendTypingStatus(chatId, me.uid, false);
+            }, 2000);
+        }
+    };
+    
+    const blurHandler = () => {
+        sendTypingStatus(chatId, me.uid, false);
+    };
+    
+    msgInput.addEventListener('input', inputHandler);
+    msgInput.addEventListener('blur', blurHandler);
+    
+    return () => {
+        msgInput.removeEventListener('input', inputHandler);
+        msgInput.removeEventListener('blur', blurHandler);
+    };
+}
+
+function showTypingIndicator(isTyping, name) {
+    const chatTitle = document.getElementById('chatTitle');
+    if (!chatTitle) return;
+    
+    if (isTyping) {
+        if (!chatTitle.dataset.originalTitle) {
+            chatTitle.dataset.originalTitle = chatTitle.innerText;
+        }
+        chatTitle.innerHTML = `${name} <span class="typing-dots-inline"><span>.</span><span>.</span><span>.</span></span>`;
+    } else if (chatTitle.dataset.originalTitle) {
+        chatTitle.innerText = chatTitle.dataset.originalTitle;
+        delete chatTitle.dataset.originalTitle;
+    }
+}
+
+// ========== FORWARD MESSAGE ==========
+export function forwardMessageToChat(message, targetChatId, targetChatName) {
+    const messageData = {
+        from: me.uid,
+        time: serverTimestamp(),
+        read: false,
+        isForwarded: true,
+        originalFrom: message.from,
+        originalText: message.txt || null,
+        originalImage: message.image || null,
+        originalVideo: message.video || null,
+        originalVoice: message.voice || null
+    };
+    
+    if (message.txt) messageData.txt = message.txt;
+    if (message.image) messageData.image = message.image;
+    if (message.video) messageData.video = message.video;
+    if (message.voice) messageData.voice = message.voice;
+    
+    addDoc(collection(dbInstance, "chats", targetChatId, "messages"), messageData);
+    showToast(`✅ Xabar ${targetChatName} ga forward qilindi`);
+}
+
+function showForwardModal(message) {
+    // Forward qilish uchun chat tanlash modalini ko'rsatish
+    const chatName = prompt("Qaysi chatga forward qilish? (username yoki chat nomi)");
+    if (chatName) {
+        // Chatni qidirish va forward qilish
+        showToast(`↗️ Xabar forward qilinmoqda...`);
+        // Bu yerda chat qidirish logikasi
+    }
+}
+
+// ========== REPLY TO MESSAGE ==========
+export function replyToMessage(message, msgId) {
+    replyToMessageData = { message, msgId };
+    const msgInput = document.getElementById('msgInput');
+    if (msgInput) {
+        msgInput.focus();
+        
+        // Reply indikatorini ko'rsatish
+        let replyIndicator = document.getElementById('replyIndicator');
+        if (!replyIndicator) {
+            replyIndicator = document.createElement('div');
+            replyIndicator.id = 'replyIndicator';
+            replyIndicator.className = 'reply-indicator';
+            document.querySelector('.chat-input-area').prepend(replyIndicator);
+        }
+        
+        const replyText = message.txt ? message.txt.substring(0, 50) : (message.image ? '📷 Rasm' : (message.video ? '🎥 Video' : '🎤 Ovoz'));
+        replyIndicator.innerHTML = `
+            <div class="reply-indicator-content">
+                <span class="reply-indicator-text">↩️ Javob: ${escapeHtml(replyText)}</span>
+                <button class="reply-indicator-cancel" id="cancelReplyBtn">✕</button>
+            </div>
+        `;
+        replyIndicator.style.display = 'block';
+        
+        document.getElementById('cancelReplyBtn').onclick = () => {
+            replyToMessageData = null;
+            replyIndicator.style.display = 'none';
+        };
+    }
+}
+
+async function sendReply() {
+    if (!replyToMessageData) return false;
+    
+    const msgInput = document.getElementById('msgInput');
+    const replyText = msgInput.value.trim();
+    if (!replyText) return false;
+    
+    const messageData = {
+        from: me.uid,
+        time: serverTimestamp(),
+        txt: replyText,
+        read: false,
+        isReply: true,
+        replyToId: replyToMessageData.msgId,
+        replyToText: replyToMessageData.message.txt || null,
+        replyToImage: replyToMessageData.message.image || null
+    };
+    
+    await addDoc(collection(dbInstance, "chats", currentChat, "messages"), messageData);
+    
+    // Reply indicator ni tozalash
+    const replyIndicator = document.getElementById('replyIndicator');
+    if (replyIndicator) replyIndicator.style.display = 'none';
+    replyToMessageData = null;
+    msgInput.value = '';
+    
+    return true;
+}
+
+// ========== DELETE FOR EVERYONE ==========
+export async function deleteForEveryone(chatId, msgId) {
+    if (!confirm("Xabarni hamma uchun o'chirilsinmi?")) return;
+    
+    try {
+        await updateDoc(doc(dbInstance, "chats", chatId, "messages", msgId), {
+            deletedForEveryone: true,
+            deletedAt: serverTimestamp(),
+            txt: "Xabar o'chirildi",
+            image: null,
+            video: null,
+            voice: null
+        });
+        showToast("✅ Xabar hamma uchun o'chirildi");
+    } catch (err) {
+        console.error("Delete for everyone error:", err);
+        showToast("❌ Xatolik yuz berdi");
+    }
+}
+
+// ========== PIN MESSAGES ==========
+export async function pinMessage(chatId, msgId, message) {
+    try {
+        const chatRef = doc(dbInstance, "chats", chatId);
+        await updateDoc(chatRef, {
+            pinnedMessage: {
+                id: msgId,
+                text: message.txt || (message.image ? '📷 Rasm' : (message.video ? '🎥 Video' : '🎤 Ovoz')),
+                from: message.from,
+                time: message.time
+            },
+            pinnedAt: serverTimestamp()
+        });
+        showToast("📌 Xabar pin qilindi");
+        showPinnedMessage(message);
+    } catch (err) {
+        console.error("Pin message error:", err);
+        showToast("❌ Xatolik yuz berdi");
+    }
+}
+
+function showPinnedMessage(message) {
+    let pinnedBar = document.getElementById('pinnedMessageBar');
+    if (!pinnedBar) {
+        pinnedBar = document.createElement('div');
+        pinnedBar.id = 'pinnedMessageBar';
+        pinnedBar.className = 'pinned-message-bar';
+        document.querySelector('.chat-header').after(pinnedBar);
+    }
+    
+    const text = message.txt ? message.txt.substring(0, 60) : (message.image ? '📷 Rasm' : (message.video ? '🎥 Video' : '🎤 Ovoz'));
+    pinnedBar.innerHTML = `
+        <div class="pinned-message-content">
+            <span class="pinned-message-icon">📌</span>
+            <span class="pinned-message-text">${escapeHtml(text)}</span>
+            <button class="pinned-message-close" id="unpinBtn">✕</button>
+        </div>
+    `;
+    pinnedBar.style.display = 'block';
+    
+    document.getElementById('unpinBtn').onclick = () => unpinMessage(currentChat);
+}
+
+async function unpinMessage(chatId) {
+    try {
+        const chatRef = doc(dbInstance, "chats", chatId);
+        await updateDoc(chatRef, {
+            pinnedMessage: null,
+            pinnedAt: null
+        });
+        const pinnedBar = document.getElementById('pinnedMessageBar');
+        if (pinnedBar) pinnedBar.style.display = 'none';
+        showToast("📌 Pin olib tashlandi");
+    } catch (err) {
+        console.error("Unpin error:", err);
+    }
+}
+
+// ========== MESSAGE SEARCH ==========
+let searchResults = [];
+let currentSearchIndex = 0;
+
+export function searchMessages(chatId, keyword) {
+    if (!keyword || keyword.trim() === '') {
+        clearSearchHighlight();
+        return [];
+    }
+    
+    const messages = document.querySelectorAll('#chatMsgs .msg');
+    const results = [];
+    
+    messages.forEach((msg, index) => {
+        const textElement = msg.querySelector('.msg-content div');
+        if (textElement && textElement.innerText.toLowerCase().includes(keyword.toLowerCase())) {
+            results.push({ element: msg, index });
+            msg.classList.add('search-highlight');
+        }
+    });
+    
+    searchResults = results;
+    currentSearchIndex = 0;
+    
+    if (results.length > 0) {
+        results[0].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        results[0].element.classList.add('search-current');
+        showToast(`🔍 ${results.length} ta xabar topildi`);
+    } else {
+        showToast(`🔍 "${keyword}" topilmadi`);
+    }
+    
+    return results;
+}
+
+function clearSearchHighlight() {
+    document.querySelectorAll('#chatMsgs .msg.search-highlight').forEach(msg => {
+        msg.classList.remove('search-highlight', 'search-current');
+    });
+    searchResults = [];
+}
+
+export function nextSearchResult() {
+    if (searchResults.length === 0) return;
+    
+    searchResults[currentSearchIndex].element.classList.remove('search-current');
+    currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
+    searchResults[currentSearchIndex].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    searchResults[currentSearchIndex].element.classList.add('search-current');
+}
+
+export function prevSearchResult() {
+    if (searchResults.length === 0) return;
+    
+    searchResults[currentSearchIndex].element.classList.remove('search-current');
+    currentSearchIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+    searchResults[currentSearchIndex].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    searchResults[currentSearchIndex].element.classList.add('search-current');
+}
+
+// ========== OPEN CHAT ==========
 export function openChat(target, type = "private", chatId = null) {
     stopAllVoice();
     stopAllPlayers();
@@ -273,6 +600,13 @@ export function openChat(target, type = "private", chatId = null) {
         }
     }
 
+    // Typing Indicator ni boshlash
+    if (typingUnsubscribe) typingUnsubscribe();
+    typingUnsubscribe = listenForTyping(currentChat, me.uid, (isTyping) => {
+        showTypingIndicator(isTyping, target.name || target.username);
+    });
+    initTypingIndicator(currentChat, target.name || target.username);
+
     if (chatView) chatView.classList.add("active");
     if (messagesUnsubscribe) messagesUnsubscribe();
 
@@ -288,7 +622,22 @@ export function openChat(target, type = "private", chatId = null) {
             container.appendChild(msgDiv);
         });
         container.scrollTop = container.scrollHeight;
+        
+        // Pinned message ni ko'rsatish
+        loadPinnedMessage(currentChat);
     });
+}
+
+async function loadPinnedMessage(chatId) {
+    try {
+        const chatRef = doc(dbInstance, "chats", chatId);
+        const chatSnap = await getDoc(chatRef);
+        if (chatSnap.exists() && chatSnap.data().pinnedMessage) {
+            showPinnedMessage(chatSnap.data().pinnedMessage);
+        }
+    } catch (err) {
+        console.error("Load pinned error:", err);
+    }
 }
 
 export function openStealthChat(stealthData) {
@@ -339,7 +688,7 @@ export function openStealthChat(stealthData) {
         }
     }
     
-    if (chatView) chatView.classList.add('active');
+    if (chatView) chatView.classList.add("active");
     if (messagesUnsubscribe) messagesUnsubscribe();
     
     const q = query(collection(dbInstance, "chats", currentChat, "messages"), orderBy("time", "asc"));
@@ -360,6 +709,7 @@ export function openStealthChat(stealthData) {
 function createMessageElement(message, msgId, isMe) {
     const msgDiv = document.createElement("div");
     msgDiv.className = "msg " + (isMe ? "me" : "them");
+    msgDiv.dataset.msgId = msgId;
 
     let msgTime = "";
     if (message.time) {
@@ -367,7 +717,27 @@ function createMessageElement(message, msgId, isMe) {
         msgTime = date.getHours().toString().padStart(2, "0") + ":" + date.getMinutes().toString().padStart(2, "0");
     }
 
-    let contentHtml = `<div class="msg-header"><span class="msg-time">${msgTime}</span></div>`;
+    let contentHtml = `<div class="msg-header"><span class="msg-time">${msgTime}</span>`;
+    
+    // Forward belgisi
+    if (message.isForwarded) {
+        contentHtml += `<span class="forward-badge">↗️ Forwarded</span>`;
+    }
+    
+    // Reply belgisi
+    if (message.isReply) {
+        contentHtml += `<div class="reply-badge">↩️ Reply to: ${escapeHtml(message.replyToText || 'Media')}</div>`;
+    }
+    
+    // Delete for everyone
+    if (message.deletedForEveryone) {
+        contentHtml += `<div class="deleted-message"><i>Xabar o'chirildi</i></div>`;
+        contentHtml += `</div><div class="msg-content"></div>`;
+        msgDiv.innerHTML = contentHtml;
+        return msgDiv;
+    }
+    
+    contentHtml += `</div>`;
     contentHtml += `<div class="msg-content">`;
     if (message.txt) contentHtml += `<div>${escapeHtml(message.txt)}</div>`;
     if (message.image && message.image !== "") {
@@ -383,6 +753,12 @@ function createMessageElement(message, msgId, isMe) {
         contentHtml += `<div class="av-container" data-url="${message.voice}" data-name="Ovozli xabar" data-size="0" data-type="voice" data-is-me="${isMe}"></div>`;
     }
     contentHtml += `</div>`;
+    
+    // Read Receipts
+    if (isMe) {
+        const readIcon = getReadStatusIcon(message);
+        contentHtml += `<div class="msg-footer">${readIcon}</div>`;
+    }
 
     msgDiv.innerHTML = contentHtml;
 
@@ -402,14 +778,138 @@ function createMessageElement(message, msgId, isMe) {
         avContainer.innerHTML = "";
         avContainer.appendChild(player);
     }
-
+    
+    // Read Receipts - mark as read
+    if (!isMe && !message.read) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    markMessageAsRead(currentChat, msgId, me.uid);
+                    observer.disconnect();
+                }
+            });
+        }, { threshold: 0.5 });
+        observer.observe(msgDiv);
+    }
+    
+    // Long press menu
+    let pressTimer = null;
+    
+    msgDiv.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        pressTimer = setTimeout(() => {
+            showContextMenu(msgId, message, isMe, e);
+        }, 500);
+    });
+    
+    msgDiv.addEventListener('mouseup', () => clearTimeout(pressTimer));
+    msgDiv.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+    msgDiv.addEventListener('touchstart', (e) => {
+        pressTimer = setTimeout(() => {
+            showContextMenu(msgId, message, isMe, e);
+        }, 500);
+    });
+    msgDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
+    msgDiv.addEventListener('contextmenu', (e) => e.preventDefault());
+    
     return msgDiv;
+}
+
+function showContextMenu(msgId, message, isMe, event) {
+    let menu = document.getElementById('messageContextMenu');
+    if (menu) menu.remove();
+    
+    menu = document.createElement('div');
+    menu.id = 'messageContextMenu';
+    menu.className = 'message-context-menu';
+    
+    let menuHtml = `
+        <div class="context-menu-item" data-action="copy">
+            <img src="svg-icons/copy.svg" width="18" height="18"> Nusxa olish
+        </div>
+        <div class="context-menu-item" data-action="forward">
+            <img src="svg-icons/forward.svg" width="18" height="18"> Forward qilish
+        </div>
+        <div class="context-menu-item" data-action="reply">
+            <img src="svg-icons/reply.svg" width="18" height="18"> Javob qilish
+        </div>
+        <div class="context-menu-item" data-action="pin">
+            <img src="svg-icons/pin.svg" width="18" height="18"> Pin qilish
+        </div>
+    `;
+    
+    if (isMe) {
+        menuHtml += `
+            <div class="context-menu-item" data-action="edit">
+                <img src="svg-icons/edit.svg" width="18" height="18"> Tahrirlash
+            </div>
+            <div class="context-menu-item" data-action="delete">
+                <img src="svg-icons/delete.svg" width="18" height="18"> O'chirish
+            </div>
+            <div class="context-menu-item" data-action="deleteForEveryone">
+                <img src="svg-icons/delete.svg" width="18" height="18"> Hamma uchun o'chirish
+            </div>
+        `;
+    }
+    
+    menu.innerHTML = menuHtml;
+    document.body.appendChild(menu);
+    
+    const x = event.clientX;
+    const y = event.clientY;
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    menu.style.display = 'block';
+    
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+        item.onclick = async () => {
+            const action = item.dataset.action;
+            
+            switch(action) {
+                case 'copy':
+                    if (message.txt) {
+                        navigator.clipboard.writeText(message.txt);
+                        showToast("Xabar nusxalandi");
+                    }
+                    break;
+                case 'forward':
+                    showForwardModal(message);
+                    break;
+                case 'reply':
+                    replyToMessage(message, msgId);
+                    break;
+                case 'pin':
+                    pinMessage(currentChat, msgId, message);
+                    break;
+                case 'edit':
+                    import("./messages.js").then(({ editMessage }) => {
+                        editMessage(msgId, message, currentChat);
+                    });
+                    break;
+                case 'delete':
+                    if(confirm("Xabarni o'chirilsinmi?")) {
+                        await deleteDoc(doc(dbInstance, "chats", currentChat, "messages", msgId));
+                        showToast("Xabar o'chirildi");
+                    }
+                    break;
+                case 'deleteForEveryone':
+                    deleteForEveryone(currentChat, msgId);
+                    break;
+            }
+            menu.remove();
+        };
+    });
+    
+    setTimeout(() => {
+        document.addEventListener('click', () => menu.remove(), { once: true });
+    }, 10);
 }
 
 export function closeChat() {
     const chatView = document.getElementById("chatView");
     if (chatView) chatView.classList.remove("active");
     if (messagesUnsubscribe) messagesUnsubscribe();
+    if (typingUnsubscribe) typingUnsubscribe();
     currentChatUser = null;
     currentChat = null;
     currentChatType = "private";
@@ -417,6 +917,14 @@ export function closeChat() {
     stopAllVoice();
     stopAllPlayers();
     endCall();
+    
+    // Reply indicator ni tozalash
+    const replyIndicator = document.getElementById('replyIndicator');
+    if (replyIndicator) replyIndicator.style.display = 'none';
+    replyToMessageData = null;
+    
+    // Search highlight ni tozalash
+    clearSearchHighlight();
 
     const msgInput = document.getElementById("msgInput");
     if (msgInput) msgInput.value = "";

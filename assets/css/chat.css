@@ -331,3 +331,163 @@
 .chat-input-area input:focus {
     border: 1px solid rgba(0, 122, 255, 0.3) !important; /* Accent rangda fokus */
 }
+/* Read Receipts Styles */
+.msg-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 4px;
+    font-size: 11px;
+    gap: 4px;
+}
+
+.read-status {
+    font-size: 11px;
+    font-weight: normal;
+    opacity: 0.7;
+}
+
+.read-status.single-check {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.read-status.double-check {
+    color: #34b7f1;
+}
+
+.read-status.sending {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* O'zim yuborgan xabar */
+.msg.me .read-status.double-check {
+    color: #34b7f1;
+}
+
+/* Boshqalarning xabari - o'qilganlik belgisi yo'q */
+.msg.them .msg-footer {
+    display: none;
+}
+/* assets/css/chat.css qo'shimchalari */
+
+/* Typing Indicator */
+.typing-dots-inline {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 5px;
+}
+
+.typing-dots-inline span {
+    width: 5px;
+    height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: typingDot 1.4s infinite;
+}
+
+.typing-dots-inline span:nth-child(1) { animation-delay: 0s; }
+.typing-dots-inline span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots-inline span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingDot {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Reply Indicator */
+.reply-indicator {
+    background: rgba(0, 210, 255, 0.1);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+.reply-indicator-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.reply-indicator-text {
+    color: var(--accent);
+    opacity: 0.8;
+}
+
+.reply-indicator-cancel {
+    background: none;
+    border: none;
+    color: #ff3b30;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+}
+
+/* Forward Badge */
+.forward-badge {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-left: 8px;
+}
+
+/* Reply Badge */
+.reply-badge {
+    font-size: 11px;
+    opacity: 0.6;
+    margin-top: 2px;
+    padding-left: 8px;
+    border-left: 2px solid var(--accent);
+}
+
+/* Deleted Message */
+.deleted-message {
+    font-style: italic;
+    opacity: 0.5;
+    font-size: 13px;
+}
+
+/* Pinned Message Bar */
+.pinned-message-bar {
+    background: rgba(0, 210, 255, 0.1);
+    border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.pinned-message-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pinned-message-icon {
+    font-size: 14px;
+}
+
+.pinned-message-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pinned-message-close {
+    background: none;
+    border: none;
+    color: #ff3b30;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+/* Search Highlight */
+.msg.search-highlight {
+    background: rgba(0, 210, 255, 0.15);
+    transition: background 0.3s;
+}
+
+.msg.search-current {
+    background: rgba(0, 210, 255, 0.3);
+    box-shadow: 0 0 0 2px var(--accent);
+}

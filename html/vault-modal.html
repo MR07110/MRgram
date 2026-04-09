@@ -1,0 +1,19 @@
+<!-- html/vault-modal.html - Vault PIN o'zgartirish modal -->
+<div id="vaultChangePinModal" class="vault-modal" style="display: none;">
+    <div class="vault-modal-content">
+        <div class="vault-modal-header">
+            <h3 class="vault-modal-title">🔐 PIN-kod o'zgartirish</h3>
+            <button class="vault-modal-close" id="closeVaultPinModal">✕</button>
+        </div>
+        <div class="vault-modal-body">
+            <input type="password" id="oldPinInput" class="vault-pin-input" maxlength="4" placeholder="Eski PIN" inputmode="numeric">
+            <input type="password" id="newPinInput" class="vault-pin-input" maxlength="4" placeholder="Yangi PIN" inputmode="numeric" style="margin-top: 12px;">
+            <input type="password" id="confirmPinInput" class="vault-pin-input" maxlength="4" placeholder="Yangi PIN tasdiqlash" inputmode="numeric" style="margin-top: 12px;">
+            <div id="vaultPinError" class="vault-error-msg" style="display: none;"></div>
+            <div class="vault-modal-buttons" style="margin-top: 20px;">
+                <button id="vaultPinConfirmBtn" class="vault-confirm-btn">O'zgartirish</button>
+                <button id="vaultPinCancelBtn" class="vault-cancel-btn">Bekor qilish</button>
+            </div>
+        </div>
+    </div>
+</div>
