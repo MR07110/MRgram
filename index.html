@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MR GRAM - PREMIUM EDITION</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="assets/css/general.css">
+    <link rel="stylesheet" href="assets/css/app.css">
+    <link rel="stylesheet" href="assets/css/auth.css">
+    <link rel="stylesheet" href="assets/css/chat.css">
+    <link rel="stylesheet" href="assets/css/call.css">
+    <link rel="stylesheet" href="assets/css/tabs.css">
+    <link rel="stylesheet" href="assets/css/ui-helpers.css">
+    <link rel="stylesheet" href="assets/css/voice.css">
+    <link rel="stylesheet" href="assets/css/group.css">
+    <link rel="stylesheet" href="assets/css/channel.css">
+    <link rel="stylesheet" href="assets/css/contacts.css">
+    <link rel="stylesheet" href="assets/css/media-preview.css">
+    <link rel="stylesheet" href="assets/css/messages.css">
+    <link rel="stylesheet" href="assets/css/upload-file.css">
+    <link rel="stylesheet" href="assets/css/user-status.css">
+    <link rel="stylesheet" href="assets/css/settings.css">
+    <link rel="stylesheet" href="assets/css/audio-voice.css">
+    <link rel="stylesheet" href="assets/css/stealth.css">
+    
+    <link rel="icon" type="image/svg+xml" href="svg-icons/messenger.svg">
+    <link rel="apple-touch-icon" href="svg-icons/messenger.svg">
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+    <div class="mg-logo">
+        <img src="svg-icons/messenger.svg" alt="MR GRAM" width="100" height="100">
+    </div>
+</div>
+
+<!-- APP ROOT -->
+<div id="appRoot"></div>
+
+<!-- YASHIRIN ELEMENTLAR -->
+<div style="display: none;">
+    <span id="meName"></span>
+    <span id="meUser"></span>
+    <input id="newName">
+    <input id="profileAvatarInput" type="file" accept="image/*">
+    <img id="profileAvatarImg">
+    <button id="updateProfileBtn"></button>
+    <div id="addContactFab"></div>
+    <div id="searchResult"></div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+<script type="module" src="assets/js/app.js"></script>
+
+<!-- Audio unlock -->
+<script>
+    (function unlockAudio() {
+        let unlocked = false;
+        const unlock = () => {
+            if (unlocked) return;
+            const audio = new Audio();
+            audio.play().then(() => {
+                unlocked = true;
+                document.removeEventListener('click', unlock);
+                document.removeEventListener('touchstart', unlock);
+                const sounds = [
+                    "assets/sounds/abonent-stop.mp3",
+                    "assets/sounds/band.mp3",
+                    "assets/sounds/call-in.mp3",
+                    "assets/sounds/call-out.mp3",
+                    "assets/sounds/red-btn.mp3",
+                    "assets/sounds/tarmoqda_emas.mp3",
+                    "assets/sounds/notification.mp3"
+                ];
+                sounds.forEach(url => { const a = new Audio(); a.src = url; a.load(); });
+                console.log("Audio unlocked");
+            }).catch(e => console.log("Audio unlock pending..."));
+        };
+        document.addEventListener('click', unlock);
+        document.addEventListener('touchstart', unlock);
+    })();
+</script>
+
+<!-- Service Worker -->
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ SW registered:', reg))
+            .catch(err => console.log('❌ SW error:', err));
+    }
+</script>
+
+</body>
+</html>

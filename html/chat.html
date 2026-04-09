@@ -1,0 +1,46 @@
+<!-- html/chat.html -->
+<div id="chatView">
+    <div class="chat-header">
+        <button id="closeChatBtn" class="chat-back-btn">
+            <img src="svg-icons/arrow-left.svg" width="24" height="24">
+        </button>
+        <div class="chat-title">
+            <img id="chatAvatarImg" class="chat-avatar" src="" style="display: none; width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+            <span id="chatTitle">Chat</span>
+        </div>
+        <div class="chat-actions">
+            <button id="audioCallBtn" class="call-header-btn" style="display: none;">
+                <img src="svg-icons/phone.svg" width="22" height="22">
+            </button>
+            <button id="videoCallBtn" class="call-header-btn" style="display: none;">
+            </button>
+            <button id="groupInfoBtn" class="call-header-btn" style="display: none;">
+                <img src="svg-icons/info.svg" width="22" height="22">
+            </button>
+        </div>
+    </div>
+    
+    <div id="chatMsgs" class="chat-messages"></div>
+    
+    <div class="input-bar">
+        <button id="fileUploadBtn" class="file-upload-btn">
+            <img src="svg-icons/clip.svg" width="20" height="20">
+        </button>
+        <div class="msg-field">
+            <input type="text" id="msgInput" placeholder="Xabar yozing...">
+        </div>
+        <div class="right-buttons">
+            <button id="voiceBtn" class="voice-btn">
+                <img src="svg-icons/mic.svg" width="18" height="18">
+            </button>
+            <button id="sendBtn" class="send-btn-circle" style="display: none;">
+                <img src="svg-icons/send.svg" width="20" height="20">
+            </button>
+        </div>
+    </div>
+    
+    <div id="recordingStatus" class="recording-status">
+        <div id="recordingWaveform" class="recording-waveform"></div>
+        <div id="recordingTimer" class="recording-timer">0:00</div>
+    </div>
+</div>

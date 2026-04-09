@@ -1,0 +1,60 @@
+/* assets/css/stealth.css - Stealth Mode Styles */
+
+/* Stealth rejimda sidebar va elementlar yashirin */
+body.stealth-mode .sidebar,
+body.stealth-mode .sidebar-overlay,
+body.stealth-mode .fab-container,
+body.stealth-mode .header .header-left .menu-btn,
+body.stealth-mode .header .header-right .search-btn,
+body.stealth-mode .header .header-right .settings-btn {
+    display: none !important;
+}
+
+body.stealth-mode .header {
+    justify-content: center !important;
+}
+
+body.stealth-mode .chat-header .chat-actions {
+    opacity: 0.5;
+}
+
+/* Stealth chat header - username yo'q */
+.stealth-chat-header .chat-username {
+    display: none !important;
+}
+
+/* Maxfiy chat badge */
+.stealth-badge {
+    background: rgba(0, 210, 255, 0.2);
+    color: var(--accent);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    margin-left: 8px;
+}
+
+/* Lock SVG */
+svg.lock-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Stealth moda animatsiya */
+body.stealth-mode #chatView {
+    transition: all 0.3s ease;
+}
+
+/* Maxfiy chat indikatori */
+.stealth-indicator {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 210, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--accent);
+    z-index: 10001;
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+}

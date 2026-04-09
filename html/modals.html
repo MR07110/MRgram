@@ -1,0 +1,102 @@
+<!-- MODAL ROOT -->
+<div id="modal-root"></div>
+
+<!-- ADD CONTACT MODAL -->
+<div id="addContactModal" class="modal">
+    <div class="modal-card">
+        <h3>➕ Kontakt qo'shish</h3>
+        <input type="text" id="searchUsername" placeholder="Username">
+        <div id="searchResult" class="search-result" style="display: none;"></div>
+        <button id="closeModalBtn" class="btn-small" style="margin-top: 10px;">Yopish</button>
+    </div>
+</div>
+<!-- Forward modal -->
+<div id="forwardModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Forward qilish</h3>
+        <input type="text" id="forwardSearchInput" placeholder="Chat nomi yoki username">
+        <div id="forwardResults" style="max-height: 200px; overflow-y: auto;"></div>
+        <div class="modal-buttons">
+            <button id="cancelForwardBtn" class="modal-cancel">Bekor qilish</button>
+        </div>
+    </div>
+</div>
+
+<!-- Save modal -->
+<div id="saveModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Xabarni saqlash</h3>
+        <p style="text-align: center; margin-bottom: 16px;">Xabar saqlandimi?</p>
+        <div class="modal-buttons">
+            <button id="confirmSaveBtn" class="modal-confirm">Saqlash</button>
+            <button id="cancelSaveBtn" class="modal-cancel">Bekor qilish</button>
+        </div>
+    </div>
+</div>
+<!-- Fayl yuklash modal yoki preview uchun -->
+<div id="filePreviewPanel" class="file-preview" style="display: none;">
+    <div class="file-preview-icon">
+        <img src="svg-icons/document.svg" width="32" height="32">
+    </div>
+    <div class="file-preview-info">
+        <div class="file-preview-name" id="fileName"></div>
+        <div class="file-preview-size" id="fileSize"></div>
+    </div>
+    <button id="cancelFilePreview" class="cancel-preview">
+        <img src="svg-icons/close.svg" width="16" height="16">
+    </button>
+</div>
+<!-- CREATE GROUP MODAL -->
+<div id="createGroupModal" class="modal">
+    <div class="modal-card">
+        <h3>👥 Guruh yaratish</h3>
+        <input type="text" id="groupName" placeholder="Guruh nomi">
+        <input type="text" id="groupDescription" placeholder="Tavsif (ixtiyoriy)">
+        <button id="confirmCreateGroupBtn" class="btn" style="margin-top: 10px;">Yaratish</button>
+        <button id="cancelCreateGroupBtn" class="btn-small" style="margin-top: 5px;">Bekor qilish</button>
+    </div>
+</div>
+
+<!-- CREATE CHANNEL MODAL -->
+<div id="createChannelModal" class="modal">
+    <div class="modal-card">
+        <h3>📢 Kanal yaratish</h3>
+        <input type="text" id="channelName" placeholder="Kanal nomi">
+        <input type="text" id="channelDescription" placeholder="Tavsif (ixtiyoriy)">
+        <button id="confirmCreateChannelBtn" class="btn" style="margin-top: 10px;">Yaratish</button>
+        <button id="cancelCreateChannelBtn" class="btn-small" style="margin-top: 5px;">Bekor qilish</button>
+    </div>
+</div>
+
+<!-- GROUP INFO MODAL -->
+<div id="groupInfoModal" class="modal">
+    <div class="modal-card">
+        <div class="group-info-header">
+            <div class="group-info-avatar">👥</div>
+            <div class="group-info-name" id="groupInfoName"></div>
+            <div class="group-info-desc" id="groupInfoDesc"></div>
+        </div>
+        <div class="group-info-stats">
+            <div>👥 <span id="groupInfoMembers">0</span> a'zo</div>
+            <div>📝 <span id="groupInfoMessages">0</span> xabar</div>
+        </div>
+        <button id="groupInfoCloseBtn" class="btn-small">Yopish</button>
+    </div>
+</div>
+
+<!-- MEDIA PREVIEW PANELS -->
+<div id="imagePreviewPanel" class="image-preview" style="display: none;">
+    <img id="previewImg" src="">
+    <span id="previewFileName"></span>
+    <button id="cancelImagePreview" class="cancel-preview">Bekor qilish</button>
+</div>
+
+<div id="voicePreviewPanel" class="voice-preview" style="display: none;">
+    <audio id="voicePreviewAudio" controls></audio>
+    <button id="cancelVoicePreview" class="cancel-preview">Bekor qilish</button>
+</div>
+
+<div id="videoPreviewPanel" class="video-preview" style="display: none;">
+    <video id="videoPreview" controls></video>
+    <button id="cancelVideoPreview" class="cancel-preview">Bekor qilish</button>
+</div>

@@ -1,0 +1,47 @@
+/* Call UI Styles */
+#callContainer {
+    background: #000;
+    z-index: 20000;
+}
+
+#localVideo {
+    object-fit: cover;
+    background: #1c1c1e;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    border-radius: 16px;
+    border: 2px solid var(--accent);
+}
+
+#remoteVideo {
+    object-fit: cover;
+    background: #000;
+}
+
+#toggleVideoBtn, #endCallBtn {
+    transition: transform 0.1s ease, opacity 0.2s;
+    cursor: pointer;
+}
+
+#toggleVideoBtn:active, #endCallBtn:active {
+    transform: scale(0.96);
+}
+
+#incomingCallDiv {
+    background: #1c1c1e;
+    backdrop-filter: blur(20px);
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.call-header-btn {
+    transition: transform 0.1s ease;
+}
+
+.call-header-btn:active {
+    transform: scale(0.9);
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

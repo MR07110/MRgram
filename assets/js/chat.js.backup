@@ -1,0 +1,391 @@
+import { createPlayer, stopAllPlayers } from "./audio-voice.js";
+// assets/chat/chat.js
+import { createPlayer, stopAllPlayers } from "./audio-voice.js";
+import { db } from "./config/firebase-config.js";
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { sendMessage, setCurrentChat, clearEditing, getPendingImage, getPendingVideo, getPendingVoice, getPendingFile, setPendingImage, setPendingVideo, setPendingVoice, setPendingFile } from "./messages.js";
+import { stopAllVoice } from "./voice.js";
+import { escapeHtml, viewFullImage, showToast } from "./ui-helpers.js";
+import { startCall, acceptCall, rejectCall, listenForIncomingCalls, initCallElements, endCall } from "./call.js";
+import { uploadMedia } from "./upload-file.js";
+
+let me = null;
+let dbInstance = null;
+let currentChatUser = null;
+let currentChat = null;
+let messagesUnsubscribe = null;
+let currentChatType = 'private';
+
+let videoProgressCallback = null;
+let incomingCallUnsubscribe = null;
+
+export function initChat(user, database) {
+    me = user;
+    dbInstance = database;
+    initCallElements();
+    
+    const closeBtn = document.getElementById('closeChatBtn');
+    if(closeBtn) closeBtn.onclick = closeChat;
+    
+    const voiceBtn = document.getElementById('voiceBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const msgInput = document.getElementById('msgInput');
+    
+    function toggleButtons() {
+        if (!voiceBtn || !sendBtn) return;
+        const hasText = msgInput && msgInput.value.trim().length > 0;
+        const hasImage = getPendingImage() !== null;
+        const hasVideo = getPendingVideo() !== null;
+        const hasVoice = getPendingVoice() !== null;
+        const hasFile = getPendingFile() !== null;
+        const hasMedia = hasImage || hasVideo || hasVoice || hasFile;
+        
+        if (hasText || hasMedia) {
+            voiceBtn.style.display = 'none';
+            sendBtn.style.display = 'flex';
+        } else {
+            voiceBtn.style.display = 'flex';
+            sendBtn.style.display = 'none';
+        }
+    }
+    
+    if (sendBtn) {
+        sendBtn.onclick = async () => {
+            const hasImage = getPendingImage() !== null;
+            const hasVideo = getPendingVideo() !== null;
+            const hasVoice = getPendingVoice() !== null;
+            const hasFile = getPendingFile() !== null;
+            
+            if (hasImage || hasVideo || hasVoice || hasFile) {
+                await handleMediaUpload();
+            } else {
+                await sendMessage(currentChat, me, (callback) => { videoProgressCallback = callback; });
+            }
+            
+            setTimeout(toggleButtons, 100);
+        };
+    }
+    
+    if (msgInput) {
+        msgInput.addEventListener('input', toggleButtons);
+        msgInput.onkeypress = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (sendBtn) sendBtn.click();
+            }
+        };
+    }
+    
+    setInterval(() => { toggleButtons(); }, 500);
+    toggleButtons();
+    
+    const audioCallBtn = document.getElementById('audioCallBtn');
+    const videoCallBtn = document.getElementById('videoCallBtn');
+    
+    if (audioCallBtn) {
+        audioCallBtn.innerHTML = `<img src="svg-icons/phone.svg" width="24" height="24">`;
+        audioCallBtn.onclick = () => {
+            if (currentChatUser && currentChatType === 'private') {
+                startCall(currentChatUser.uid, me.uid, false);
+            }
+        };
+    }
+    if (videoCallBtn) {
+        videoCallBtn.onclick = () => {
+            if (currentChatUser && currentChatType === 'private') {
+                startCall(currentChatUser.uid, me.uid, true);
+            }
+        };
+    }
+    
+    if (!window.callListenerStarted) {
+        window.callListenerStarted = true;
+        incomingCallUnsubscribe = listenForIncomingCalls(me.uid, (callerId, callId, isVideo) => {
+            const acceptBtn = document.getElementById('acceptCallBtn');
+            const rejectBtn = document.getElementById('rejectCallBtn');
+            if (acceptBtn) acceptBtn.onclick = () => acceptCall(callId, me.uid);
+            if (rejectBtn) rejectBtn.onclick = () => rejectCall(callId);
+        });
+    }
+    
+    document.addEventListener('openChat', (e) => openChat(e.detail));
+}
+
+async function handleMediaUpload() {
+    const hasImage = getPendingImage() !== null;
+    const hasVideo = getPendingVideo() !== null;
+    const hasVoice = getPendingVoice() !== null;
+    const hasFile = getPendingFile() !== null;
+    
+    let messageData = { from: me.uid, time: serverTimestamp() };
+    
+    const msgInput = document.getElementById('msgInput');
+    const msgText = msgInput ? msgInput.value.trim() : '';
+    if (msgText) messageData.txt = msgText;
+    
+    try {
+        if (hasImage) {
+            messageData.image = getPendingImage();
+            setPendingImage(null);
+        }
+        if (hasVideo) {
+            messageData.video = getPendingVideo();
+            setPendingVideo(null);
+        }
+        if (hasVoice) {
+            messageData.voice = getPendingVoice();
+            setPendingVoice(null);
+        }
+        if (hasFile) {
+            const file = getPendingFile();
+            messageData.file = file;
+            setPendingFile(null);
+        }
+        
+        await addDoc(collection(dbInstance, "chats", currentChat, "messages"), messageData);
+        
+        if (msgInput) msgInput.value = '';
+        
+        const panels = ['imagePreviewPanel', 'videoPreviewPanel', 'voicePreviewPanel', 'filePreviewPanel'];
+        panels.forEach(id => {
+            const panel = document.getElementById(id);
+            if(panel) panel.style.display = 'none';
+        });
+        
+        showToast("Xabar yuborildi");
+        
+    } catch (error) {
+        console.error("Xabar yuborish xatosi:", error);
+        showToast("Xatolik: " + error.message);
+    }
+}
+
+export function openChat(target, type = 'private', chatId = null) {
+    stopAllVoice();
+    stopAllPlayers();
+    stopAllPlayers();
+    currentChatUser = target;
+    currentChatType = type;
+    
+    if (type === 'private') {
+        currentChat = [me.uid, target.uid].sort().join('_');
+    } else if (type === 'group') {
+        currentChat = chatId || target.id;
+    } else if (type === 'channel') {
+        currentChat = chatId || target.id;
+    }
+    
+    setCurrentChat(currentChat);
+    
+    const chatTitle = document.getElementById('chatTitle');
+    const chatView = document.getElementById('chatView');
+    const audioCallBtn = document.getElementById('audioCallBtn');
+    const videoCallBtn = document.getElementById('videoCallBtn');
+    const groupInfoBtn = document.getElementById('groupInfoBtn');
+    
+    if (type === 'private') {
+        chatTitle.innerText = target.name || target.username;
+        if (audioCallBtn) {
+            audioCallBtn.style.display = 'flex';
+            audioCallBtn.innerHTML = `<img src="svg-icons/phone.svg" width="24" height="24">`;
+        }
+        if (videoCallBtn) {
+            videoCallBtn.style.display = 'flex';
+        }
+        if (groupInfoBtn) groupInfoBtn.style.display = 'none';
+    } else {
+        chatTitle.innerText = target.name;
+        if (audioCallBtn) audioCallBtn.style.display = 'none';
+        if (videoCallBtn) videoCallBtn.style.display = 'none';
+        if (groupInfoBtn) groupInfoBtn.style.display = 'flex';
+    }
+    
+    const chatAvatarImg = document.getElementById('chatAvatarImg');
+    if (chatAvatarImg) {
+        if (type === 'private' && target.photoURL && target.photoURL !== "") {
+            chatAvatarImg.src = target.photoURL;
+            chatAvatarImg.style.display = 'inline-block';
+            chatAvatarImg.style.width = '36px';
+            chatAvatarImg.style.height = '36px';
+            chatAvatarImg.style.borderRadius = '50%';
+            chatAvatarImg.style.objectFit = 'cover';
+            chatAvatarImg.style.flexShrink = '0';
+        } else {
+            chatAvatarImg.style.display = 'none';
+        }
+    }
+    
+    if(chatView) chatView.classList.add('active');
+    if(messagesUnsubscribe) messagesUnsubscribe();
+    
+    const q = query(collection(dbInstance, "chats", currentChat, "messages"), orderBy("time", "asc"));
+    messagesUnsubscribe = onSnapshot(q, (snap) => {
+        const container = document.getElementById('chatMsgs');
+        if(!container) return;
+        container.innerHTML = "";
+        snap.forEach(docSnap => {
+            const m = docSnap.data();
+            const isMe = m.from === me.uid;
+            const msgDiv = createMessageElement(m, docSnap.id, isMe);
+            container.appendChild(msgDiv);
+        });
+        container.scrollTop = container.scrollHeight;
+    });
+}
+
+function createMessageElement(message, msgId, isMe) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `msg ${isMe ? 'me' : 'them'}`;
+    
+    let msgTime = "";
+    if(message.time) {
+        const date = new Date(message.time?.seconds * 1000);
+        msgTime = `${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+    }
+    
+    const headerHtml = `<div class="msg-header"><span class="msg-time">${msgTime}</span></div>`;
+    
+    let contentHtml = `<div class="msg-content">`;
+    if(message.txt) contentHtml += `<div>${escapeHtml(message.txt)}</div>`;
+    
+    // RASM
+    if(message.image && message.image !== "") {
+        contentHtml += `<img src="${message.image}" class="msg-image" data-src="${message.image}" style="max-width:200px; max-height:200px; border-radius:16px; cursor:pointer; object-fit:cover;" onerror="this.style.display='none';">`;
+    }
+    
+    // VIDEO
+    if(message.video && message.video !== "") {
+        contentHtml += `<video controls preload="auto" src="${message.video}" style="max-width:250px; max-height:200px; border-radius:16px; margin-top:6px; margin-bottom:4px; display:block;" onerror="this.style.display='none';"></video>`;
+    }
+    
+    // VOICE MESSAGE (Telegram uslubida)
+    if(message.voice && message.voice !== "") {
+        contentHtml += `<div class="voice-container" data-voice-url="${message.voice}" data-voice-duration="${message.duration || 0}" data-voice-size="${message.size || 0}" data-is-me="${isMe}"></div>`;
+    }
+    
+    // AUDIO FILE (Telegram uslubida player)
+    if(message.file && message.file.type === 'audio') {
+        contentHtml += `<div class="audio-container" data-audio-url="${message.file.url}" data-audio-name="${escapeHtml(message.file.name)}" data-audio-size="${message.file.size}" data-is-me="${isMe}"></div>`;
+    }
+    
+    // BOSHQA FILE TURLARI
+    if(message.file && message.file.type !== 'audio') {
+        const fileIcon = message.file.type === 'image' ? 'image.svg' : 
+        const formattedSize = formatFileSize(message.file.size);
+        contentHtml += `<div class="file-message"><img src="svg-icons/${fileIcon}" width="24" height="24"><div class="file-info"><div class="file-name">${escapeHtml(message.file.name)}</div><div class="file-size">${formattedSize}</div></div><a href="${message.file.url}" download target="_blank"><img src="svg-icons/download.svg" width="20" height="20"></a></div>`;
+    }
+    
+    if(message.edited) contentHtml += `<small style="opacity:0.5;"> ✎</small>`;
+    contentHtml += `</div>`;
+    
+    msgDiv.innerHTML = headerHtml + contentHtml;
+    
+    // RASMNI TO'LIQ EKRANDA KO'RSATISH
+    const msgImage = msgDiv.querySelector('.msg-image');
+    if(msgImage) {
+        msgImage.onclick = (e) => { e.stopPropagation(); viewFullImage(msgImage.dataset.src); };
+    }
+    
+    // VOICE MESSAGE (Telegram uslubi)
+    const voiceContainer = msgDiv.querySelector('.voice-container');
+    if(voiceContainer) {
+        const voiceUrl = voiceContainer.dataset.voiceUrl;
+        const duration = parseInt(voiceContainer.dataset.voiceDuration) || 0;
+        const size = parseInt(voiceContainer.dataset.voiceSize) || 0;
+        const isMeVoice = voiceContainer.dataset.isMe === 'true';
+        
+            const url = voiceContainer.dataset.voiceUrl;
+            const duration = parseInt(voiceContainer.dataset.voiceDuration) || 0;
+            const size = parseInt(voiceContainer.dataset.voiceSize) || 0;
+            const player = createPlayer(url, "Ovozli xabar", size, "voice", isMe);
+            voiceContainer.innerHTML = "";
+            voiceContainer.appendChild(player);
+        voiceContainer.appendChild(voicePlayer);
+    }
+    
+    // AUDIO FILE PLAYER
+    const audioContainer = msgDiv.querySelector('.audio-container');
+    if(audioContainer) {
+        const audioUrl = audioContainer.dataset.audioUrl;
+        const audioName = audioContainer.dataset.audioName;
+        const audioSize = parseInt(audioContainer.dataset.audioSize) || 0;
+        const isMeAudio = audioContainer.dataset.isMe === 'true';
+        
+            const url = audioContainer.dataset.audioUrl;
+            const name = audioContainer.dataset.audioName;
+            const size = parseInt(audioContainer.dataset.audioSize) || 0;
+            const player = createPlayer(url, name, size, "audio", isMe);
+            audioContainer.innerHTML = "";
+            audioContainer.appendChild(player);
+        audioContainer.appendChild(audioPlayer);
+    }
+    
+    // O'ZIM YUBORGAN XABAR UCHUN TAHRIRLASH VA O'CHIRISH
+    if(isMe) {
+        let timer;
+        msgDiv.onclick = (e) => {
+            if(e.target.tagName === 'IMG' || e.target.closest('.voice-message') || e.target.tagName === 'VIDEO' || e.target.closest('.file-message') || e.target.closest('.audio-message')) return;
+            import("./messages.js").then(({ editMessage }) => { editMessage(msgId, message, currentChat); });
+        };
+        msgDiv.onmousedown = () => {
+            timer = setTimeout(async () => {
+                if(confirm("Xabarni o'chirilsinmi?")) {
+                    await deleteDoc(doc(dbInstance, "chats", currentChat, "messages", msgId));
+                }
+            }, 800);
+        };
+        msgDiv.onmouseup = () => clearTimeout(timer);
+        msgDiv.onmouseleave = () => clearTimeout(timer);
+    }
+    
+    return msgDiv;
+}
+
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    return (bytes / 1024 / 1024 / 1024).toFixed(1) + ' GB';
+}
+
+export function closeChat() {
+    const chatView = document.getElementById('chatView');
+    if(chatView) chatView.classList.remove('active');
+    if(messagesUnsubscribe) messagesUnsubscribe();
+    currentChatUser = null;
+    currentChat = null;
+    currentChatType = 'private';
+    clearEditing();
+    stopAllVoice();
+    stopAllPlayers();
+    stopAllPlayers();
+    endCall();
+    
+    const panels = ['imagePreviewPanel', 'videoPreviewPanel', 'voicePreviewPanel', 'filePreviewPanel'];
+    panels.forEach(id => {
+        const panel = document.getElementById(id);
+        if(panel) panel.style.display = 'none';
+    });
+    
+    const msgInput = document.getElementById('msgInput');
+    if(msgInput) msgInput.value = '';
+    
+    const voiceBtn = document.getElementById('voiceBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    if (voiceBtn && sendBtn) {
+        voiceBtn.style.display = 'flex';
+        sendBtn.style.display = 'none';
+    }
+    
+    const audioCallBtn = document.getElementById('audioCallBtn');
+    const videoCallBtn = document.getElementById('videoCallBtn');
+    const groupInfoBtn = document.getElementById('groupInfoBtn');
+    if (audioCallBtn) audioCallBtn.style.display = 'none';
+    if (videoCallBtn) videoCallBtn.style.display = 'none';
+    if (groupInfoBtn) groupInfoBtn.style.display = 'none';
+}
+
+export function getCurrentChat() { return currentChat; }
+export function getCurrentChatUser() { return currentChatUser; }
+export function getCurrentChatType() { return currentChatType; }

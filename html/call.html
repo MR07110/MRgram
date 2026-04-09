@@ -1,0 +1,52 @@
+<!-- CALL UI -->
+<div id="callContainer" style="display: none;">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+    
+    <div class="call-info">
+        <img id="callTargetAvatar" class="call-avatar" src="">
+        <div id="callTargetName" class="call-name"></div>
+        <div id="callStatusText" class="call-status">Kutilmoqda...</div>
+        <div id="callDuration" class="call-duration">00:00</div>
+    </div>
+    
+    <div class="call-controls">
+        <button id="toggleMicBtn" class="call-control-btn">
+            <img src="svg-icons/mic.svg" width="28" height="28">
+        </button>
+        <button id="toggleVideoBtn" class="call-control-btn">
+            <img src="svg-icons/camera.svg" width="28" height="28">
+        </button>
+        <button id="toggleSpeakerBtn" class="call-control-btn">
+            <img src="svg-icons/volume-up.svg" width="28" height="28">
+        </button>
+        <button id="switchCameraBtn" class="call-control-btn">
+            <img src="svg-icons/switch-camera.svg" width="28" height="28">
+        </button>
+        <button id="screenshotBtn" class="call-control-btn">
+            <img src="svg-icons/camera.svg" width="28" height="28">
+        </button>
+        <button id="endCallBtn" class="call-control-btn end-call">
+            <img src="svg-icons/end-call.svg" width="48" height="48">
+        </button>
+    </div>
+</div>
+
+<!-- INCOMING CALL -->
+<div id="incomingCallDiv" style="display: none;">
+    <div class="incoming-call-card">
+        <div class="incoming-call-info">
+            <img id="incomingCallAvatar" src="">
+            <div id="incomingCallName" class="incoming-call-name">Qo'ng'iroq...</div>
+            <div class="incoming-call-type">🎥 Video qo'ng'iroq</div>
+        </div>
+        <div class="incoming-call-actions">
+            <button id="acceptCallBtn" class="accept-call-btn">
+                <img src="svg-icons/accept-call.svg" width="56" height="56">
+            </button>
+            <button id="rejectCallBtn" class="reject-call-btn">
+                <img src="svg-icons/end-call.svg" width="56" height="56">
+            </button>
+        </div>
+    </div>
+</div>

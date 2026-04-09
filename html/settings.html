@@ -1,0 +1,85 @@
+<div id="settingsView" class="settings-container" style="display: none;">
+    <div class="settings-sidebar">
+        <h3>⚙️ Sozlamalar</h3>
+        <button class="settings-tab active" data-tab="profile">👤 Profil</button>
+        <button class="settings-tab" data-tab="security">🔐 Xavfsizlik</button>
+        <button class="settings-tab" data-tab="theme">🎨 Tema</button>
+        <button class="settings-tab" data-tab="notifications">🔔 Bildirishnomalar</button>
+        <button class="settings-tab" data-tab="chat">💬 Chat</button>
+        <button class="settings-tab" data-tab="voice">🎤 Ovoz</button>
+        <button class="settings-tab" data-tab="data">📁 Ma'lumotlar</button>
+        <button class="settings-tab" data-tab="about">ℹ️ Ilova haqida</button>
+        <button id="closeSettingsBtn" class="settings-tab" style="margin-top:20px; color:#ff3b30;">❌ Yopish</button>
+    </div>
+    <div class="settings-content">
+        <div id="settings-profile" class="settings-panel active">
+            <div class="settings-section">
+                <h4>👤 Profil ma'lumotlari</h4>
+                <div class="settings-row"><span class="settings-label">Ism</span><input type="text" id="settingsName"></div>
+                <div class="settings-row"><span class="settings-label">Username</span><input type="text" id="settingsUsername" disabled></div>
+                <div class="settings-row"><span class="settings-label">Bio</span><textarea id="settingsBio" rows="3"></textarea></div>
+                <div class="settings-row"><span class="settings-label">Profil rasmi</span><button id="changeAvatarBtn" class="btn-small">📸 Rasm yuklash</button></div>
+                <button id="saveProfileBtn" class="btn">💾 Saqlash</button>
+            </div>
+        </div>
+        <div id="settings-security" class="settings-panel">
+            <div class="settings-section">
+                <h4>🔐 Parol o'zgartirish</h4>
+                <div class="settings-row"><span class="settings-label">Eski parol</span><input type="password" id="oldPassword"></div>
+                <div class="settings-row"><span class="settings-label">Yangi parol</span><input type="password" id="newPassword"></div>
+                <div class="settings-row"><span class="settings-label">Tasdiqlash</span><input type="password" id="confirmPassword"></div>
+                <button id="changePasswordBtn" class="btn">🔄 Parolni o'zgartirish</button>
+            </div>
+        </div>
+        <div id="settings-theme" class="settings-panel">
+            <div class="settings-section">
+                <h4>🎨 Tema</h4>
+                <div class="radio-group">
+                    <label><input type="radio" name="theme" value="light"> ☀️ Yorug'</label>
+                    <label><input type="radio" name="theme" value="dark" checked> 🌙 Qorong'i</label>
+                    <label><input type="radio" name="theme" value="system"> ⚙️ Tizim</label>
+                </div>
+            </div>
+        </div>
+        <div id="settings-notifications" class="settings-panel">
+            <div class="settings-section">
+                <h4>🔔 Bildirishnomalar</h4>
+                <div class="settings-row"><span class="settings-label">Holat</span><span id="notificationStatus">⏳ Yuklanmoqda...</span></div>
+                <div class="settings-row"><span class="settings-label">Ovozli bildirishnoma</span><label class="switch"><input type="checkbox" id="notificationSound" checked><span class="slider"></span></label></div>
+                <button id="enableNotifications" class="btn">🔔 Ruxsat berish</button>
+            </div>
+        </div>
+        <div id="settings-chat" class="settings-panel">
+            <div class="settings-section">
+                <h4>💬 Chat sozlamalari</h4>
+                <div class="settings-row"><span class="settings-label">Fon rangi</span><select id="chatBgColor"><option value="dark">🌙 Qorong'i</option><option value="light">☀️ Yorug'</option><option value="gradient">🎨 Gradient</option></select></div>
+                <div class="settings-row"><span class="settings-label">Shrift o'lchami</span><select id="chatFontSize"><option value="small">🔤 Kichik</option><option value="medium" selected>🔤 O'rtacha</option><option value="large">🔤 Katta</option></select></div>
+            </div>
+        </div>
+        <div id="settings-voice" class="settings-panel">
+            <div class="settings-section">
+                <h4>🎤 Ovoz sozlamalari</h4>
+                <div class="settings-row"><span class="settings-label">Mikrofon holati</span><span id="micStatus">⏳ Tekshirilmoqda...</span></div>
+                <div class="settings-row"><span class="settings-label">Qo'ng'iroq ohangi</span><select id="ringtoneSelect"><option value="default">📞 Standart</option><option value="classic">🎵 Klassik</option><option value="modern">🎧 Modern</option></select></div>
+                <button id="enableMicBtn" class="btn">🎤 Mikrofon ruxsati</button>
+            </div>
+        </div>
+        <div id="settings-data" class="settings-panel">
+            <div class="settings-section">
+                <h4>📁 Ma'lumotlar</h4>
+                <div class="settings-row"><span class="settings-label">Keshni tozalash</span><button id="clearCacheBtn" class="btn-small">🗑️ Tozalash</button></div>
+                <div class="settings-row"><span class="settings-label">Ma'lumotlarni eksport qilish</span><button id="exportDataBtn" class="btn-small">📤 Eksport</button></div>
+                <div class="settings-row"><span class="settings-label">Hisobni o'chirish</span><button id="deleteAccountBtn" class="btn-small btn-danger">⚠️ O'chirish</button></div>
+            </div>
+        </div>
+        <div id="settings-about" class="settings-panel">
+            <div class="settings-section">
+                <h4>ℹ️ MR GRAM</h4>
+                <div id="appVersion" class="settings-row"></div>
+                <div id="appAuthor" class="settings-row"></div>
+                <div id="appTech" class="settings-row"></div>
+                <div id="appExtra" class="settings-row"></div>
+            </div>
+        </div>
+    </div>
+</div>

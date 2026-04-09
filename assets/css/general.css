@@ -1,0 +1,184 @@
+/* ========== GENERAL.CSS – TRENDY GLASSMORPHISM & DARK ========== */
+
+:root {
+    /* 1. Base Colors - Deep Indigo Night (Qop-qora emas, o'ta to'q ko'k-kulrang) */
+    --bg: #0b0d11; 
+    --bg-secondary: #151921;
+
+    /* 2. Glassmorphism Core (Eng asosiysi) */
+    --glass-bg: rgba(23, 28, 38, 0.7); /* Shaffof fon */
+    --glass-border: rgba(255, 255, 255, 0.08); /* Nozik chegara */
+    --glass-blur: blur(25px) saturate(180%);
+    
+    /* 3. Accent Colors - Neon Cyan/Blue (Trenddagi yorqin ko'k) */
+    --accent: #00d2ff;
+    --accent-glow: rgba(0, 210, 255, 0.3);
+    --accent-dark: #0086ad;
+
+    /* 4. Text & Detail */
+    --text: #f0f2f5;
+    --text-secondary: #9ba1b0;
+    --sub: rgba(255, 255, 255, 0.25);
+    
+    /* 5. Messages - Sifatli Gradient & Blur */
+    --msg-me: linear-gradient(135deg, #0072ff 0%, #00d2ff 100%);
+    --msg-them: rgba(255, 255, 255, 0.06);
+    --online: #00ff88; /* Neon Yashil */
+}
+
+/* ----- Global Glass Effect (Barcha kartalar va headerlar uchun) ----- */
+.glass-effect {
+    background: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    -webkit-backdrop-filter: var(--glass-blur) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* ----- Scrollbar - Invisible & Smooth ----- */
+::-webkit-scrollbar {
+    width: 3px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(transparent, var(--accent), transparent);
+    border-radius: 10px;
+}
+/* ----- Animations ----- */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+@keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(42, 157, 143, 0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(42, 157, 143, 0); }
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+@keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-10px); opacity: 1; }
+}
+
+/* ----- Utility classes ----- */
+.float-icon { animation: float 2.8s ease-in-out infinite; }
+.glow-ring { animation: glowPulse 1.8s infinite; }
+.pulse { animation: pulse 1s infinite; }
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #2c2c2e;
+    border-top-color: #2a9d8f;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.skeleton {
+    background: linear-gradient(90deg, #1e1e24 25%, #2a2a32 50%, #1e1e24 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+
+/* ----- Typing indicator (global) ----- */
+.typing-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 8px 12px;
+    background: #1c1c1e;
+    border-radius: 28px;
+    width: fit-content;
+}
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    background: #2a9d8f;
+    border-radius: 50%;
+    animation: typing 1.3s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ----- Global toast (mrgram-toast) ----- */
+.mrgram-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(28,28,30,0.92);
+    backdrop-filter: blur(18px);
+    border-radius: 28px;
+    padding: 12px 20px;
+    z-index: 100000;
+    border-left: 4px solid #2a9d8f;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideInRight 0.2s ease;
+    max-width: 320px;
+    cursor: default;
+}
+
+/* ----- Context menu ----- */
+.context-menu {
+    background: #1c1c1e;
+    border-radius: 20px;
+    padding: 8px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+    border: 0.5px solid rgba(255,255,255,0.08);
+    min-width: 180px;
+    z-index: 200000;
+}
+.context-menu-item {
+    padding: 10px 14px;
+    border-radius: 14px;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+.context-menu-item:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+/* ----- Button ripple effect ----- */
+.ripple-btn {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.1s;
+}
+.ripple-btn:active {
+    transform: scale(0.96);
+}
+
+/* ----- Page transitions (fade) ----- */
+.fade-enter {
+    opacity: 0;
+    transform: translateY(20px);
+}
+.fade-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s ease;
+}

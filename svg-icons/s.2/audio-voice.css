@@ -1,0 +1,259 @@
+/* assets/css/audio-voice.css */
+
+.av-player {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    width: 280px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    transition: all 0.2s ease;
+    position: relative;
+    user-select: none;
+}
+
+.av-player:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Play button */
+.av-play-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #0088cc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s ease;
+}
+
+.av-play-btn:active {
+    transform: scale(0.95);
+}
+
+/* Siri to'lqinlari */
+.av-wave {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 100%;
+    height: 100%;
+    background: #0088cc;
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+}
+
+.av-wave-1 { filter: blur(2px); }
+.av-wave-2 { filter: blur(4px); }
+.av-wave-3 { filter: blur(6px); }
+
+/* Play/Pause icon */
+.av-play-btn img {
+    width: 28px !important;
+    height: 28px !important;
+    filter: brightness(0) invert(1) !important;
+    position: relative;
+    z-index: 3;
+}
+
+/* Info area */
+.av-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.av-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+
+/* Progress bar */
+.av-progress-wrapper {
+    width: 100%;
+}
+
+.av-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    margin-bottom: 4px;
+}
+
+.av-progress-fill {
+    height: 100%;
+    background: #0088cc;
+    border-radius: 4px;
+    width: 0%;
+    position: relative;
+}
+
+.av-progress-slider {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.av-progress-bar:hover .av-progress-slider {
+    opacity: 1;
+}
+
+/* Time */
+.av-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-family: monospace;
+    opacity: 0.6;
+    color: #ffffff;
+}
+
+.av-current-time {
+    color: #0088cc;
+    font-weight: bold;
+}
+
+/* Footer - Icon va hajm */
+.av-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+    justify-content: flex-end;
+}
+
+.av-icon {
+    width: 14px !important;
+    height: 14px !important;
+    opacity: 0.5;
+}
+
+.av-size {
+    font-size: 9px;
+    opacity: 0.4;
+    color: #ffffff;
+}
+
+/* My message (me) */
+.me-player .av-player {
+    background: rgba(0, 136, 204, 0.15);
+    border-color: rgba(0, 136, 204, 0.2);
+}
+
+.me-player .av-icon {
+    filter: brightness(0) invert(1);
+}
+
+/* Their message (them) */
+.them-player .av-player {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.them-player .av-icon {
+    filter: invert(47%) sepia(91%) saturate(1680%) hue-rotate(178deg) brightness(95%) contrast(101%);
+}
+
+/* Playing state */
+.playing .av-play-btn {
+    transform: scale(1.05);
+}
+
+/* Xabar ichida */
+.msg:has(.av-player) {
+    max-width: 300px !important;
+    padding: 4px 10px !important;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .av-player {
+        width: 240px;
+        padding: 8px 12px;
+        gap: 10px;
+    }
+
+    .av-play-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .av-play-btn img {
+        width: 22px !important;
+        height: 22px !important;
+    }
+    
+    .av-title {
+        font-size: 12px;
+    }
+    
+    .av-icon {
+        width: 12px !important;
+        height: 12px !important;
+    }
+    
+    .msg:has(.av-player) {
+        max-width: 260px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .av-player {
+        width: 220px;
+        padding: 6px 10px;
+        gap: 8px;
+    }
+
+    .av-play-btn {
+        width: 34px;
+        height: 34px;
+    }
+
+    .av-play-btn img {
+        width: 18px !important;
+        height: 18px !important;
+    }
+    
+    .av-title {
+        font-size: 11px;
+    }
+    
+    .av-icon {
+        width: 10px !important;
+        height: 10px !important;
+    }
+    
+    .av-size {
+        font-size: 8px;
+    }
+    
+    .msg:has(.av-player) {
+        max-width: 240px !important;
+    }
+}

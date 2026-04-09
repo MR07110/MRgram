@@ -1,0 +1,83 @@
+<div id="mainApp" class="app-shell" style="display: none;">
+    
+    <div class="header">
+        <div class="header-left">
+            <button id="menuBtn" class="menu-btn">
+                <img src="svg-icons/menu.svg" width="24" height="24">
+            </button>
+            <div class="logo-text">MR GRAM</div>
+        </div>
+        <div class="header-right">
+            <button id="settingsBtn" class="settings-btn">
+                <img src="svg-icons/gear.svg" width="24" height="24">
+            </button>
+            <button id="searchBtn" class="search-btn">
+                <img src="svg-icons/search.svg" width="24" height="24">
+            </button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div id="indicator" class="tab-indicator"></div>
+        <div class="tab active" id="tabChats">
+            <img src="svg-icons/chat.svg" width="14" height="14"> Chatlar
+        </div>
+        <div class="tab" id="tabGroups">
+            <img src="svg-icons/users.svg" width="14" height="14"> Guruhlar
+        </div>
+        <div class="tab" id="tabChannels">
+            <img src="svg-icons/bullhorn.svg" width="14" height="14"> Kanallar
+        </div>
+    </div>
+    
+    <div id="listArea" class="list-area"></div>
+    <div id="groupsList" class="list-area" style="display: none;"></div>
+    <div id="channelsList" class="list-area" style="display: none;"></div>
+    
+    <div class="fab-container">
+        <div id="fabMenu" class="fab-menu">
+            <div class="fab-menu-item" id="newChannelBtn">
+                <span>Yangi kanal</span>
+                <div class="fab-icon-sub"><img src="svg-icons/bullhorn.svg" width="18" height="18"></div>
+            </div>
+            <div class="fab-menu-item" id="newGroupBtn">
+                <span>Yangi guruh</span>
+                <div class="fab-icon-sub"><img src="svg-icons/users.svg" width="18" height="18"></div>
+            </div>
+            <div class="fab-menu-item" id="newChatBtn">
+                <span>Yangi chat</span>
+                <div class="fab-icon-sub"><img src="svg-icons/chat.svg" width="18" height="18"></div>
+            </div>
+        </div>
+        <button id="mainFab" class="fab-btn">
+            <img src="svg-icons/pen.svg" width="24" height="24">
+        </button>
+    </div>
+</div>
+
+<div id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-avatar" id="sidebarAvatar">
+            <img id="sidebarAvatarImg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: transparent !important;">
+        </div>
+        <div class="sidebar-info">
+            <div id="sidebarName" style="font-weight: 600;">---</div>
+            <div id="sidebarUsername" style="font-size: 12px; opacity: 0.6;">@---</div>
+        </div>
+    </div>
+    <div class="sidebar-menu">
+        <div class="sidebar-item" id="sidebarGroups">
+            <img src="svg-icons/users.svg" width="20" height="20"> <span>Guruhlar</span>
+        </div>
+        <div class="sidebar-item" id="sidebarChannels">
+            <img src="svg-icons/bullhorn.svg" width="20" height="20"> <span>Kanallar</span>
+        </div>
+        <div class="sidebar-item" id="sidebarSettings">
+            <img src="svg-icons/gear.svg" width="20" height="20"> <span>Sozlamalar</span>
+        </div>
+        <div class="sidebar-item" id="sidebarLogout">
+            <img src="svg-icons/logout.svg" width="20" height="20"> <span>Chiqish</span>
+        </div>
+    </div>
+</div>
+<div id="sidebarOverlay" class="sidebar-overlay"></div>

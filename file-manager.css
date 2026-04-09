@@ -1,0 +1,126 @@
+/* assets/css/file-manager.css */
+
+.file-previews-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    margin-bottom: 8px;
+}
+
+.file-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #1c1c1e;
+    border-radius: 16px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    position: relative;
+    animation: fadeInScale 0.2s ease;
+    max-width: 200px;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.file-preview-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2c2c2e;
+    border-radius: 10px;
+    font-size: 20px;
+}
+
+.file-preview-icon img {
+    width: 28px;
+    height: 28px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.file-preview-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-preview-name {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
+}
+
+.file-preview-size {
+    font-size: 10px;
+    opacity: 0.6;
+}
+
+.file-preview-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.file-preview-remove:hover {
+    opacity: 1;
+    background: rgba(255, 59, 48, 0.2);
+}
+
+.file-preview-remove img {
+    filter: brightness(0) invert(1);
+    width: 14px;
+    height: 14px;
+}
+
+/* Input bar tuzatish */
+.input-bar {
+    flex-direction: column;
+    padding: 12px 16px 20px;
+}
+
+.input-bar .input-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .file-preview-item {
+        max-width: 160px;
+        padding: 6px 10px;
+    }
+    
+    .file-preview-name {
+        max-width: 80px;
+        font-size: 11px;
+    }
+    
+    .file-preview-icon {
+        width: 30px;
+        height: 30px;
+    }
+}

@@ -1,0 +1,223 @@
+/* assets/css/voice.css */
+
+.voice-input-wrapper {
+position: relative;
+display: flex;
+align-items: center;
+flex: 1;
+}
+
+.voice-input-wrapper input {
+flex: 1;
+background: #1c1c1e;
+border: none;
+padding: 12px 50px 12px 16px;
+border-radius: 28px;
+color: white;
+font-size: 15px;
+outline: none;
+}
+
+.voice-input-wrapper input:focus {
+border: 1px solid #0088cc;
+}
+
+.voice-inline-btn {
+position: absolute;
+right: 6px;
+top: 50%;
+transform: translateY(-50%);
+width: 38px;
+height: 38px;
+background: transparent;
+border: none;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+color: #8e8e93;
+border-radius: 10px;
+transition: all 0.2s;
+}
+
+.voice-inline-btn svg {
+width: 20px;
+height: 20px;
+fill: currentColor;
+}
+
+.voice-inline-btn.recording {
+background: #28a745;
+color: white;
+animation: pulseGreen 1s infinite;
+}
+
+@keyframes pulseGreen {
+0% { box-shadow: 0 0 0 0 rgba(40,167,69,0.4); }
+70% { box-shadow: 0 0 0 6px rgba(40,167,69,0); }
+100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+}
+
+.recording-status-inline {
+flex: 1;
+background: #1c1c1e;
+border-radius: 28px;
+padding: 6px 12px;
+display: none;
+align-items: center;
+gap: 10px;
+}
+
+.recording-status-inline.active {
+display: flex;
+}
+
+.recording-waveform-inline {
+display: flex;
+align-items: center;
+gap: 2px;
+height: 28px;
+}
+
+.recording-waveform-inline .wave-bar {
+width: 2px;
+background: #28a745;
+border-radius: 1px;
+}
+
+.recording-timer-inline {
+font-size: 13px;
+color: #28a745;
+font-family: monospace;
+min-width: 45px;
+}
+
+.recording-cancel {
+background: none;
+border: none;
+color: #ff3b30;
+font-size: 13px;
+cursor: pointer;
+padding: 4px 10px;
+border-radius: 16px;
+}
+
+.recording-send {
+background: #0088cc;
+border: none;
+width: 32px;
+height: 32px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+}
+
+.recording-send svg {
+width: 16px;
+height: 16px;
+fill: white;
+}
+
+.lock-wrapper-inline {
+position: fixed;
+bottom: 90px;
+right: 16px;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 6px;
+opacity: 0;
+transform: translateY(30px);
+transition: all 0.3s;
+pointer-events: none;
+z-index: 1000;
+}
+
+.lock-wrapper-inline.visible {
+opacity: 1;
+transform: translateY(0);
+}
+
+.lock-icon-inline {
+width: 44px;
+height: 44px;
+background: #1c1c1e;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+color: #8e8e93;
+}
+
+.lock-icon-inline.active {
+color: #28a745;
+transform: scale(1.08);
+}
+
+.lock-label-inline {
+font-size: 10px;
+color: rgba(255,255,255,0.5);
+background: rgba(0,0,0,0.6);
+padding: 3px 8px;
+border-radius: 10px;
+}
+
+.send-btn {
+width: 42px;
+height: 42px;
+border-radius: 50%;
+background: #0088cc;
+border: none;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.send-btn svg {
+width: 20px;
+height: 20px;
+fill: white;
+}
+
+.chat-input-area {
+padding: 10px 16px 20px;
+background: rgba(0,0,0,0.9);
+border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.input-row {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+@media (max-width: 600px) {
+.voice-inline-btn { width: 34px; height: 34px; }
+.voice-inline-btn svg { width: 18px; height: 18px; }
+.voice-input-wrapper input { padding: 10px 45px 10px 14px; }
+.send-btn { width: 38px; height: 38px; }
+.lock-wrapper-inline { bottom: 75px; right: 12px; }
+.lock-icon-inline { width: 38px; height: 38px; }
+}
+
+
+/* Voice button SVG */
+.voice-inline-btn svg {
+background: transparent !important;
+fill: currentColor;
+stroke: none;
+}
+
+.voice-inline-btn.recording svg {
+fill: white;
+stroke: none;
+}
+
+.recording-send svg {
+fill: white;
+stroke: none;
+}
+
