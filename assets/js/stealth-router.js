@@ -1,4 +1,4 @@
-// assets/js/stealth-router.js - Infinity Hash Routing & Stealth Mode
+// assets/js/stealth-router.js
 
 let stealthModeActive = false;
 let currentStealthChatId = null;
@@ -90,7 +90,8 @@ function removeStealthUI() {
     document.body.classList.remove('stealth-mode');
 }
 
-async function openStealthChat(chatId) {
+// ========== MUHIM: openStealthChat EKSPORT QILINDI ==========
+export async function openStealthChat(chatId) {
     try {
         const { db } = await import("./config/firebase-config.js");
         const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
