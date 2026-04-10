@@ -58,7 +58,7 @@ export function getSelectedFiles() {
     return [...selectedFiles];
 }
 
-function createFilePreview(file) {
+function createFilePreview(file, index) {
     if (!filePreviewsContainer) return;
     
     const index = selectedFiles.length - 1;
@@ -105,7 +105,6 @@ function createFilePreview(file) {
     if (fileType === 'video') {
         const video = previewDiv.querySelector('.file-preview-icon');
         if (video) {
-            video.innerHTML = `<img src="svg-icons/video.svg" width="24" height="24">`;
         }
     }
     
@@ -160,4 +159,5 @@ function toggleSendButton() {
             }
         }
     }
+}
 }

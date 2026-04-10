@@ -23,7 +23,7 @@ export async function initSettings(user) {
     // ========== HTML NI YUKLASH ==========
     if (!settingsLoaded) {
         try {
-            const response = await fetch('html/settings.html');
+           const response = await fetch('./html/settings.html');
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const html = await response.text();
             settingsView.innerHTML = html;
@@ -449,3 +449,6 @@ setInterval(() => {
         forceSettingsVisibility();
     }
 }, 500);
+// settings.js ichida
+switchSettingsTab('profile'); 
+console.log("✅ Profile paneli majburan yoqildi");
