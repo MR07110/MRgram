@@ -487,3 +487,30 @@ function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
 }
+// Settings ni avtomatik yopilishini oldini olish
+setTimeout(() => {
+    const sv = document.getElementById('settingsView');
+    if (sv) {
+        // Har 500ms da tekshirib, yopilgan bo'lsa qayta ochish
+        setInterval(() => {
+            if (sv.style.display === 'none') {
+                sv.style.display = 'flex';
+                console.log('✅ Settings auto-reopened');
+            }
+        }, 500);
+    }
+}, 1000);
+
+// Prevent auto-close
+setTimeout(() => {
+const sv = document.getElementById("settingsView");
+if (sv) {
+setInterval(() => {
+if (sv.style.display === "none") {
+sv.style.display = "flex";
+console.log("✅ Settings auto-reopened");
+}
+}, 500);
+}
+}, 1000);
+
