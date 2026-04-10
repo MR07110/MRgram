@@ -1,4 +1,4 @@
-// assets/js/settings.js - TO'LIQ
+// assets/js/settings.js
 
 import { openVault, getSecretContacts, addSecretContact, deleteSecretContact } from "./vault.js";
 
@@ -6,15 +6,21 @@ let currentUser = null;
 let settingsLoaded = false;
 
 export async function initSettings(user) {
-    currentUser = user;
     console.log("initSettings called", user);
+    currentUser = user;
 
     if (!settingsLoaded) {
-        const response = await fetch('/html/settings.html');
-        const html = await response.text();
-        document.getElementById('settingsView').innerHTML = html;
-        settingsLoaded = true;
-        console.log("Settings HTML loaded");
+        try {
+            const response = await fetch('html/settings.html');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const html = await response.text();
+            document.getElementById('settingsView').innerHTML = html;
+            settingsLoaded = true;
+            console.log("Settings HTML loaded");
+        } catch (err) {
+            console.error("Failed to load settings.html:", err);
+            return;
+        }
     }
 
     attachSettingsEvents();
@@ -79,7 +85,7 @@ function attachSettingsEvents() {
     if (enableMicBtn) enableMicBtn.onclick = requestMicrophonePermission;
 
     const clearCacheBtn = document.getElementById('clearCacheBtn');
-    if (clearCacheBtn) clearCacheBtn.onclick = clearCache;
+    if (clearCacheBtn) clearCacheBtn.onclick = () => clearCache();
 
     const exportDataBtn = document.getElementById('exportDataBtn');
     if (exportDataBtn) exportDataBtn.onclick = exportData;
@@ -155,7 +161,6 @@ async function changePassword() {
     if (!oldPass || !newPass || !confirmPass) return alert("Barcha maydonlarni to'ldiring!");
     if (newPass !== confirmPass) return alert("Yangi parol va tasdiqlash mos emas!");
     if (newPass.length < 6) return alert("Parol kamida 6 belgi!");
-
     if (oldPass !== currentUser.password) return alert("Eski parol xato!");
 
     try {
@@ -165,7 +170,6 @@ async function changePassword() {
         currentUser.password = newPass;
         localStorage.setItem('mrgram_user', JSON.stringify(currentUser));
         alert("✅ Parol o'zgartirildi!");
-        
         document.getElementById('oldPassword').value = '';
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmPassword').value = '';
@@ -204,6 +208,51 @@ async function requestMicrophonePermission() {
             micSpan.innerHTML = '❌ Ruxsat berilmagan';
             micSpan.style.color = '#ff3b30';
         }
+    }
+}
+
+// ========== YANGI FUNKSIYALAR ==========
+function clearCache() {
+    localStorage.clear();
+    sessionStorage.clear();
+    if ('caches' in window) {
+        caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+    }
+    alert('Kesh tozalandi!');
+}
+
+function exportData() {
+    const data = {
+        user: currentUser,
+        settings: {
+            theme: localStorage.getItem('mrgram_theme'),
+            notif_sound: localStorage.getItem('notif_sound'),
+            chat_bg: localStorage.getItem('chat_bg'),
+            chat_font_size: localStorage.getItem('chat_font_size'),
+            ringtone: localStorage.getItem('ringtone')
+        },
+        exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mrgram_data_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function deleteAccount() {
+    if (!confirm("Hisobingiz butunlay o'chiriladi. Davom etasizmi?")) return;
+    try {
+        const { db } = await import("./config/firebase-config.js");
+        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+        await deleteDoc(doc(db, "users", currentUser.uid));
+        localStorage.clear();
+        alert("Hisob o'chirildi. Sahifa yangilanadi.");
+        location.reload();
+    } catch (err) {
+        alert("Xatolik: " + err.message);
     }
 }
 
@@ -296,74 +345,10 @@ function setupVoiceSettings() {
             localStorage.setItem('ringtone', e.target.value);
         };
     }
-    navigator.permissions.query({ name: 'microphone' }).then(result => {
-        const micSpan = document.getElementById('micStatus');
-        if (micSpan) {
-            if (result.state === 'granted') {
-                micSpan.innerHTML = '✅ Ruxsat berilgan';
-                micSpan.style.color = '#28a745';
-            } else if (result.state === 'denied') {
-                micSpan.innerHTML = '❌ Ruxsat berilmagan';
-                micSpan.style.color = '#ff3b30';
-            } else {
-                micSpan.innerHTML = '⏳ Ruxsat so\'ralmagan';
-                micSpan.style.color = '#ffc107';
-            }
-        }
-    });
 }
 
 function setupDataHandlers() {
-    const clearCacheBtn = document.getElementById('clearCacheBtn');
-    if (clearCacheBtn) {
-        clearCacheBtn.onclick = () => {
-            localStorage.clear();
-            sessionStorage.clear();
-            if ('caches' in window) caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
-            alert('Kesh tozalandi!');
-        };
-    }
-    
-    const exportBtn = document.getElementById('exportDataBtn');
-    if (exportBtn) {
-        exportBtn.onclick = () => {
-            const data = {
-                user: currentUser,
-                settings: {
-                    theme: localStorage.getItem('mrgram_theme'),
-                    notif_sound: localStorage.getItem('notif_sound'),
-                    chat_bg: localStorage.getItem('chat_bg'),
-                    chat_font_size: localStorage.getItem('chat_font_size'),
-                    ringtone: localStorage.getItem('ringtone')
-                },
-                exportDate: new Date().toISOString()
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `mrgram_data_${Date.now()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        };
-    }
-    
-    const deleteBtn = document.getElementById('deleteAccountBtn');
-    if (deleteBtn) {
-        deleteBtn.onclick = async () => {
-            if (!confirm("Hisobingiz butunlay o'chiriladi. Davom etasizmi?")) return;
-            try {
-                const { db } = await import("./config/firebase-config.js");
-                const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-                await deleteDoc(doc(db, "users", currentUser.uid));
-                localStorage.clear();
-                alert("Hisob o'chirildi. Sahifa yangilanadi.");
-                location.reload();
-            } catch (err) {
-                alert("Xatolik: " + err.message);
-            }
-        };
-    }
+    // Functions already defined above
 }
 
 function setupAbout() {
@@ -406,67 +391,6 @@ function setupVaultPanel() {
         sidebar.insertBefore(vaultTab, sidebar.querySelector('#closeSettingsBtn'));
         vaultTab.onclick = () => switchSettingsTab('vault');
     }
-    
-    // Vault tugmalariga event
-    document.getElementById('vaultAddContactBtn')?.addEventListener('click', () => {
-        openVault(async (unlocked) => {
-            if (unlocked) {
-                const name = prompt("Kontakt ismi:");
-                if (!name) return;
-                const stealthId = prompt("Maxfiy ID (4 xonali raqam):");
-                if (!stealthId || !/^\d{4}$/.test(stealthId)) {
-                    alert("4 xonali raqam kiriting!");
-                    return;
-                }
-                await addSecretContact({ name, stealthId });
-                await loadVaultContacts();
-            }
-        }, "Maxfiy kontakt qo'shish");
-    });
-    
-    document.getElementById('vaultChangePinBtn')?.addEventListener('click', () => {
-        openVault(async (unlocked) => {
-            if (unlocked) {
-                alert("PIN o'zgartirish modal (tez kunda)");
-            }
-        }, "PIN-kod o'zgartirish");
-    });
-    
-    loadVaultContacts();
-}
-
-async function loadVaultContacts() {
-    const container = document.getElementById('vaultContactsList');
-    if (!container) return;
-    
-    const contacts = await getSecretContacts();
-    
-    if (contacts.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.5;">Hozircha maxfiy kontaktlar yo\'q</div>';
-        return;
-    }
-    
-    container.innerHTML = contacts.map(contact => `
-        <div class="vault-contact-item" data-id="${contact.id}">
-            <div class="vault-contact-info">
-                <div class="vault-contact-name">${escapeHtml(contact.name)}</div>
-                <div class="vault-contact-id">#${contact.stealthId || contact.id}</div>
-            </div>
-            <button class="vault-contact-delete" data-id="${contact.id}">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
-            </button>
-        </div>
-    `).join('');
-    
-    document.querySelectorAll('.vault-contact-delete').forEach(btn => {
-        btn.onclick = async () => {
-            const id = parseInt(btn.dataset.id);
-            if (confirm("Kontaktni o'chirilsinmi?")) {
-                await deleteSecretContact(id);
-                await loadVaultContacts();
-            }
-        };
-    });
 }
 
 function switchSettingsTab(tabName) {
@@ -482,35 +406,3 @@ function switchSettingsTab(tabName) {
     const activeTab = document.querySelector(`.settings-tab[data-tab="${tabName}"]`);
     if (activeTab) activeTab.classList.add('active');
 }
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-}
-// Settings ni avtomatik yopilishini oldini olish
-setTimeout(() => {
-    const sv = document.getElementById('settingsView');
-    if (sv) {
-        // Har 500ms da tekshirib, yopilgan bo'lsa qayta ochish
-        setInterval(() => {
-            if (sv.style.display === 'none') {
-                sv.style.display = 'flex';
-                console.log('✅ Settings auto-reopened');
-            }
-        }, 500);
-    }
-}, 1000);
-
-// Prevent auto-close
-setTimeout(() => {
-const sv = document.getElementById("settingsView");
-if (sv) {
-setInterval(() => {
-if (sv.style.display === "none") {
-sv.style.display = "flex";
-console.log("✅ Settings auto-reopened");
-}
-}, 500);
-}
-}, 1000);
-
