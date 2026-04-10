@@ -9,20 +9,33 @@ export async function initSettings(user) {
     console.log("initSettings called", user);
     currentUser = user;
 
+    // ========== SETTINGS VIEW ELEMENTINI TOPISH YOKI YARATISH ==========
+    let settingsView = document.getElementById('settingsView');
+    
+    if (!settingsView) {
+        settingsView = document.createElement('div');
+        settingsView.id = 'settingsView';
+        settingsView.className = 'settings-container';
+        document.body.appendChild(settingsView);
+        console.log("✅ settingsView elementi yaratildi");
+    }
+
+    // ========== HTML NI YUKLASH ==========
     if (!settingsLoaded) {
         try {
             const response = await fetch('html/settings.html');
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const html = await response.text();
-            document.getElementById('settingsView').innerHTML = html;
+            settingsView.innerHTML = html;
             settingsLoaded = true;
-            console.log("Settings HTML loaded");
+            console.log("✅ Settings HTML yuklandi");
         } catch (err) {
-            console.error("Failed to load settings.html:", err);
+            console.error("❌ Settings HTML yuklanmadi:", err);
             return;
         }
     }
 
+    // ========== FUNKSIYALARNI ULASH ==========
     attachSettingsEvents();
     loadUserData();
     setupTheme();
@@ -33,7 +46,22 @@ export async function initSettings(user) {
     setupAbout();
     setupVaultPanel();
 
-    document.getElementById('settingsView').style.display = 'flex';
+    // ========== SETTINGSNI KO'RSATISH ==========
+    settingsView.style.display = 'flex';
+    switchSettingsTab('profile');
+    console.log("✅ Settings ochildi");
+}
+    attachSettingsEvents();
+    loadUserData();
+    setupTheme();
+    setupNotifications();
+    setupChatSettings();
+    setupVoiceSettings();
+    setupDataHandlers();
+    setupAbout();
+    setupVaultPanel();
+
+    settingsView.style.display = 'flex';
     switchSettingsTab('profile');
     console.log("Settings opened");
 }
