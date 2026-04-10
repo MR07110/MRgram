@@ -51,20 +51,6 @@ export async function initSettings(user) {
     switchSettingsTab('profile');
     console.log("✅ Settings ochildi");
 }
-    attachSettingsEvents();
-    loadUserData();
-    setupTheme();
-    setupNotifications();
-    setupChatSettings();
-    setupVoiceSettings();
-    setupDataHandlers();
-    setupAbout();
-    setupVaultPanel();
-
-    settingsView.style.display = 'flex';
-    switchSettingsTab('profile');
-    console.log("Settings opened");
-}
 
 function attachSettingsEvents() {
     document.querySelectorAll('.settings-tab').forEach(tab => {
