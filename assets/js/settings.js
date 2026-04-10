@@ -420,3 +420,33 @@ function switchSettingsTab(tabName) {
     const activeTab = document.querySelector(`.settings-tab[data-tab="${tabName}"]`);
     if (activeTab) activeTab.classList.add('active');
 }
+// Force settings visibility - FIX
+(function ensureSettingsView() {
+    const checkAndFix = () => {
+        let sv = document.getElementById('settingsView');
+        if (!sv) {
+            sv = document.createElement('div');
+            sv.id = 'settingsView';
+            sv.className = 'settings-container';
+            document.body.appendChild(sv);
+            console.log('✅ settingsView yaratildi');
+        }
+        sv.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 999999 !important;
+            background: #0b0d11 !important;
+            display: flex !important;
+            color: white !important;
+        `;
+    };
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkAndFix);
+    } else {
+        checkAndFix();
+    }
+})();
