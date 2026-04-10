@@ -420,17 +420,13 @@ function switchSettingsTab(tabName) {
     const activeTab = document.querySelector(`.settings-tab[data-tab="${tabName}"]`);
     if (activeTab) activeTab.classList.add('active');
 }
-// Force settings visibility - FIX
-(function ensureSettingsView() {
-    const checkAndFix = () => {
-        let sv = document.getElementById('settingsView');
-        if (!sv) {
-            sv = document.createElement('div');
-            sv.id = 'settingsView';
-            sv.className = 'settings-container';
-            document.body.appendChild(sv);
-            console.log('✅ settingsView yaratildi');
-        }
+
+// Force settings visibility - FAQAT settings ochilganda ishlaydi
+let settingsForceApplied = false;
+
+function forceSettingsVisibility() {
+    const sv = document.getElementById('settingsView');
+    if (sv && sv.style.display === 'flex' && !settingsForceApplied) {
         sv.style.cssText = `
             position: fixed !important;
             top: 0 !important;
@@ -438,15 +434,18 @@ function switchSettingsTab(tabName) {
             width: 100% !important;
             height: 100% !important;
             z-index: 999999 !important;
-            background: #0b0d11 !important;
+            background: var(--bg) !important;
             display: flex !important;
-            color: white !important;
         `;
-    };
-    
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', checkAndFix);
-    } else {
-        checkAndFix();
+        settingsForceApplied = true;
+        console.log('✅ Settings visibility applied');
     }
-})();
+}
+
+// Har 500ms da tekshir, faqat settings ochilganda ishlat
+setInterval(() => {
+    const sv = document.getElementById('settingsView');
+    if (sv && sv.style.display === 'flex') {
+        forceSettingsVisibility();
+    }
+}, 500);
