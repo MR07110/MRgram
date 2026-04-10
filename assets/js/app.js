@@ -1,5 +1,4 @@
 // assets/js/app.js
-
 import { requestNotificationPermission, listenForMessages } from "./notifications.js";
 import { db } from "./config/firebase-config.js";
 import { initAuth, logout } from "./auth.js";
@@ -9,11 +8,10 @@ import { initMediaPreviews, setVoicePreviewFromBlob } from "./media-preview.js";
 import { initVoice, stopAllVoice } from "./voice.js";
 import { uploadAudio, uploadAvatar } from "./upload-file.js";
 import { setUserOnline, setUserOffline } from "./user-status.js";
-import { showToast, getAvatarColorFromUsername, getAvatarInitial } from "./ui-helpers.js";
+import { showToast } from "./ui-helpers.js";
 import { createGroup, loadUserGroups } from "./group.js";
 import { createChannel, loadUserChannels } from "./channel.js";
 import { initSettings } from "./settings.js";
-import { initHashRouting, generateStealthId, isStealthModeActive } from "./stealth-router.js";
 import { 
     collection, query, where, getDocs, doc, getDoc, 
     setDoc, updateDoc, arrayUnion 
@@ -24,6 +22,7 @@ let pendingAvatarFile = null;
 let allUsersForSearch = [];
 let currentTab = 'chats';
 
+// HTML fayllarni yuklash
 async function loadHTMLFiles() {
     const appRoot = document.getElementById('appRoot');
     if (!appRoot) {
@@ -31,7 +30,9 @@ async function loadHTMLFiles() {
         return;
     }
     
-    const files = ['layout', 'auth', 'chat', 'call', 'modals', 'search', 'settings'];
+    const files = [
+        'layout', 'auth', 'chat', 'call', 'modals', 'search', 'settings'
+    ];
     
     for (const file of files) {
         try {
@@ -50,6 +51,7 @@ async function loadHTMLFiles() {
 }
 
 window.onload = async () => {
+    // HTML fayllarni yuklash
     await loadHTMLFiles();
     
     const saved = localStorage.getItem('mrgram_user');
@@ -72,6 +74,7 @@ function startApp() {
     const mainApp = document.getElementById('mainApp');
     if(mainApp) mainApp.style.display = 'flex';
     
+    // Yashirin elementlarni to'ldirish (agar mavjud bo'lsa)
     const meNameEl = document.getElementById('meName');
     const meUserEl = document.getElementById('meUser');
     if (meNameEl) meNameEl.innerText = me.name;
@@ -93,9 +96,7 @@ function startApp() {
     initChat(me, db);
     initMediaPreviews();
     
-    // STEALTH HASH ROUTING
-    initHashRouting();
-    
+    // ========== MENU & SIDEBAR ==========
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -141,6 +142,7 @@ function startApp() {
         switchTab('channels');
     };
     
+    // ========== TABS ==========
     const tabChats = document.getElementById('tabChats');
     const tabGroups = document.getElementById('tabGroups');
     const tabChannels = document.getElementById('tabChannels');
@@ -180,6 +182,7 @@ function startApp() {
     if (tabGroups) tabGroups.onclick = () => switchTab('groups');
     if (tabChannels) tabChannels.onclick = () => switchTab('channels');
     
+    // ========== FAB MENU ==========
     const mainFab = document.getElementById('mainFab');
     const fabMenu = document.getElementById('fabMenu');
     let fabOpen = false;
@@ -219,21 +222,7 @@ function startApp() {
         openCreateChannelModal();
     };
     
-    // STEALTH CHAT BUTTON
-    const stealthChatBtn = document.createElement('div');
-    stealthChatBtn.className = 'fab-menu-item';
-    stealthChatBtn.id = 'newStealthChatBtn';
-    stealthChatBtn.innerHTML = `
-        <span>🔒 Maxfiy chat</span>
-        <div class="fab-icon-sub"><img src="svg-icons/lock.svg" width="18" height="18"></div>
-    `;
-    stealthChatBtn.onclick = () => {
-        fabOpen = false;
-        fabMenu.classList.remove('open');
-        createNewStealthChat();
-    };
-    fabMenu.appendChild(stealthChatBtn);
-    
+    // ========== GROUP & CHANNEL MODALS ==========
     const createGroupModal = document.getElementById('createGroupModal');
     const createChannelModal = document.getElementById('createChannelModal');
     
@@ -303,6 +292,7 @@ function startApp() {
         };
     }
     
+    // ========== SEARCH PAGE ==========
     const searchBtn = document.getElementById('searchBtn');
     if (searchBtn) searchBtn.onclick = openSearchPage;
 
@@ -312,6 +302,7 @@ function startApp() {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) searchInput.oninput = (e) => debounceSearch(e.target.value);
     
+    // ========== VOICE MESSAGE ==========
     const voiceBtn = document.getElementById('voiceBtn');
     if (voiceBtn) {
         initVoice(voiceBtn, async (audioBlob) => {
@@ -324,12 +315,14 @@ function startApp() {
         });
     }
     
+    // ========== SETTINGS ==========
     const settingsBtn = document.getElementById('settingsBtn');
     if (settingsBtn) settingsBtn.onclick = openSettings;
 
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
     if (closeSettingsBtn) closeSettingsBtn.onclick = closeSettings;
 
+    // Notification ruxsat so'rash
     setTimeout(async () => {
         const granted = await requestNotificationPermission(me);
         if (granted) {
@@ -337,6 +330,7 @@ function startApp() {
         }
     }, 3000);
     
+    // Splash ekranni yashirish
     setTimeout(() => {
         const splash = document.getElementById('splash');
         if (splash) {
@@ -346,11 +340,7 @@ function startApp() {
     }, 800);
 }
 
-async function createNewStealthChat() {
-    const stealthId = generateStealthId();
-    window.location.hash = stealthId;
-    showToast(`🔒 Maxfiy chat yaratildi: #${stealthId}`);
-}
+// ========== SEARCH PAGE FUNKSIYALARI ==========
 
 async function loadAllUsersForSearch() {
     const usersRef = collection(db, "users");
@@ -500,7 +490,6 @@ function updateSidebarInfo() {
     const sName = document.getElementById('sidebarName');
     const sUser = document.getElementById('sidebarUsername');
     const sImg = document.getElementById('sidebarAvatarImg');
-    const sAvatarDiv = document.querySelector('.sidebar-avatar');
     
     if (sName) sName.innerText = me.name;
     if (sUser) sUser.innerText = '@' + me.username;
@@ -508,21 +497,13 @@ function updateSidebarInfo() {
     if (sImg) {
         if (me.photoURL) {
             sImg.src = me.photoURL;
-            sImg.style.display = 'block';
-            const oldSpan = sAvatarDiv?.querySelector('.smart-avatar-span');
-            if (oldSpan) oldSpan.remove();
         } else {
-            sImg.style.display = 'none';
-            let span = sAvatarDiv?.querySelector('.smart-avatar-span');
-            if (!span && sAvatarDiv) {
-                span = document.createElement('span');
-                span.className = 'smart-avatar-span sidebar-smart-avatar';
-                const bgColor = getAvatarColorFromUsername(me.username);
-                span.style.cssText = `width:100%; height:100%; border-radius:50%; background:${bgColor}; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:24px; color:white;`;
-                span.innerText = getAvatarInitial(me.name);
-                sAvatarDiv.appendChild(span);
-            }
+            sImg.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233a3a3c'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E`;
         }
+        sImg.style.width = '100%';
+        sImg.style.height = '100%';
+        sImg.style.objectFit = 'cover';
+        sImg.style.borderRadius = '50%';
     }
 }
 

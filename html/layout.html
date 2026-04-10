@@ -1,5 +1,7 @@
+<!-- html/layout.html -->
 <div id="mainApp" class="app-shell" style="display: none;">
     
+    <!-- HEADER -->
     <div class="header">
         <div class="header-left">
             <button id="menuBtn" class="menu-btn">
@@ -17,6 +19,7 @@
         </div>
     </div>
 
+    <!-- TABS -->
     <div class="tabs">
         <div id="indicator" class="tab-indicator"></div>
         <div class="tab active" id="tabChats">
@@ -30,10 +33,12 @@
         </div>
     </div>
     
+    <!-- LISTS -->
     <div id="listArea" class="list-area"></div>
     <div id="groupsList" class="list-area" style="display: none;"></div>
     <div id="channelsList" class="list-area" style="display: none;"></div>
     
+    <!-- FAB MENU -->
     <div class="fab-container">
         <div id="fabMenu" class="fab-menu">
             <div class="fab-menu-item" id="newChannelBtn">
@@ -55,11 +60,13 @@
     </div>
 </div>
 
+<!-- SIDEBAR -->
 <div id="sidebar" class="sidebar">
     <div class="sidebar-header">
-        <div class="sidebar-avatar" id="sidebarAvatar">
-            <img id="sidebarAvatarImg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: transparent !important;">
-        </div>
+    <!-- Sidebar avatar qismini shunday o'zgartiring -->
+    <div class="sidebar-avatar" id="sidebarAvatar">
+        <img id="sidebarAvatarImg" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+    </div>
         <div class="sidebar-info">
             <div id="sidebarName" style="font-weight: 600;">---</div>
             <div id="sidebarUsername" style="font-size: 12px; opacity: 0.6;">@---</div>

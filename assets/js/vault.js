@@ -3,8 +3,18 @@
 let vaultUnlocked = false;
 let pendingPinCallback = null;
 let vaultData = null;
+let currentUser = null;
 
-// PIN-kod hash (oddiy xavfsizlik uchun, real production'da bcrypt ishlatish kerak)
+// ========== JORIY FOYDALANUVCHINI SOZLASH ==========
+export function setCurrentUser(user) {
+    currentUser = user;
+}
+
+export function getCurrentUser() {
+    return currentUser;
+}
+
+// ========== PIN-KOD HASH ==========
 function hashPin(pin) {
     let hash = 0;
     for (let i = 0; i < pin.length; i++) {
@@ -14,18 +24,16 @@ function hashPin(pin) {
     return hash.toString();
 }
 
-// Vault ni ochish (PIN so'rash)
+// ========== VAULT NI OCHISH (PIN SO'RASH) ==========
 export function openVault(callback, title = "Maxfiy kontaktlar") {
     pendingPinCallback = callback;
     
-    // Modalni yaratish
     let modal = document.getElementById('vaultModal');
     if (!modal) {
         createVaultModal();
         modal = document.getElementById('vaultModal');
     }
     
-    // Modalni sozlash
     const modalTitle = modal.querySelector('.vault-modal-title');
     if (modalTitle) modalTitle.innerText = title;
     
@@ -66,7 +74,6 @@ function createVaultModal() {
     `;
     document.body.appendChild(modal);
     
-    // Eventlar
     document.getElementById('vaultCloseBtn').onclick = closeVaultModal;
     document.getElementById('vaultCancelBtn').onclick = closeVaultModal;
     document.getElementById('vaultConfirmBtn').onclick = verifyPin;
@@ -76,7 +83,6 @@ function createVaultModal() {
         if (e.key === 'Enter') verifyPin();
     });
     
-    // Faqat raqamlar
     pinInput.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
     });
@@ -99,7 +105,6 @@ async function verifyPin() {
         return;
     }
     
-    // PIN ni tekshirish
     const isValid = await checkPin(pin);
     
     if (isValid) {
@@ -117,13 +122,11 @@ async function verifyPin() {
     }
 }
 
-// PIN ni tekshirish (Firebase'dan yoki localStorage'dan)
+// ========== PIN NI TEKSHIRISH ==========
 async function checkPin(pin) {
     const savedPinHash = localStorage.getItem('vault_pin_hash');
     
-    // Agar PIN birinchi marta o'rnatilayotgan bo'lsa
     if (!savedPinHash) {
-        // Default PIN: 0000 (yoki birinchi marta so'rash)
         const defaultPin = '0000';
         localStorage.setItem('vault_pin_hash', hashPin(defaultPin));
         localStorage.setItem('vault_pin_set', 'true');
@@ -133,7 +136,7 @@ async function checkPin(pin) {
     return hashPin(pin) === savedPinHash;
 }
 
-// PIN ni o'zgartirish
+// ========== PIN NI O'ZGARTIRISH ==========
 export async function changePin(oldPin, newPin) {
     if (!oldPin || !newPin || newPin.length !== 4) {
         return { success: false, error: "PIN 4 xonali bo'lishi kerak" };
@@ -148,63 +151,54 @@ export async function changePin(oldPin, newPin) {
     return { success: true };
 }
 
-// PIN ni reset qilish (admin yoki maxsus kalit bilan)
+// ========== PIN NI RESET QILISH ==========
 export function resetPin() {
     localStorage.removeItem('vault_pin_hash');
     localStorage.removeItem('vault_pin_set');
     vaultUnlocked = false;
 }
 
-// Vault holatini tekshirish
+// ========== VAULT HOLATINI TEKSHIRISH ==========
 export function isVaultUnlocked() {
     return vaultUnlocked;
 }
 
-// Vault ma'lumotlarini saqlash (maxfiy kontaktlar)
+// ========== VAULT MA'LUMOTLARINI SAQLASH ==========
 export async function saveVaultData(data) {
     if (!vaultUnlocked) return false;
     
     const encrypted = btoa(JSON.stringify(data));
     localStorage.setItem('vault_encrypted_data', encrypted);
     
-    // Firebase ga ham saqlash (xavfsizroq)
-    try {
-        const { db } = await import("./config/firebase-config.js");
-        const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-        const { getCurrentUser } = await import("./auth.js");
-        const user = getCurrentUser();
-        if (user) {
-            await setDoc(doc(db, "vault", user.uid), {
+    if (currentUser && currentUser.uid) {
+        try {
+            const { db } = await import("./config/firebase-config.js");
+            const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+            await setDoc(doc(db, "vault", currentUser.uid), {
                 data: encrypted,
                 updatedAt: new Date().toISOString()
             });
+        } catch (err) {
+            console.error("Vault Firebase save error:", err);
         }
-    } catch (err) {
-        console.error("Vault Firebase save error:", err);
     }
     
     return true;
 }
 
-// Vault ma'lumotlarini o'qish
+// ========== VAULT MA'LUMOTLARINI O'QISH ==========
 export async function loadVaultData() {
     if (!vaultUnlocked) return null;
     
-    // LocalStorage dan o'qish
     let encrypted = localStorage.getItem('vault_encrypted_data');
     
-    // Agar localStorage'da bo'lmasa, Firebase'dan o'qish
-    if (!encrypted) {
+    if (!encrypted && currentUser && currentUser.uid) {
         try {
             const { db } = await import("./config/firebase-config.js");
             const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-            const { getCurrentUser } = await import("./auth.js");
-            const user = getCurrentUser();
-            if (user) {
-                const docSnap = await getDoc(doc(db, "vault", user.uid));
-                if (docSnap.exists()) {
-                    encrypted = docSnap.data().data;
-                }
+            const docSnap = await getDoc(doc(db, "vault", currentUser.uid));
+            if (docSnap.exists()) {
+                encrypted = docSnap.data().data;
             }
         } catch (err) {
             console.error("Vault Firebase load error:", err);
@@ -221,7 +215,7 @@ export async function loadVaultData() {
     }
 }
 
-// Maxfiy kontakt qo'shish
+// ========== MAXFIY KONTAKT QO'SHISH ==========
 export async function addSecretContact(contact) {
     const data = await loadVaultData();
     if (!data) return false;
@@ -236,13 +230,13 @@ export async function addSecretContact(contact) {
     return await saveVaultData(data);
 }
 
-// Maxfiy kontaktlarni olish
+// ========== MAXFIY KONTAKTLARNI OLISH ==========
 export async function getSecretContacts() {
     const data = await loadVaultData();
     return data?.contacts || [];
 }
 
-// Maxfiy kontakt o'chirish
+// ========== MAXFIY KONTAKT O'CHIRISH ==========
 export async function deleteSecretContact(contactId) {
     const data = await loadVaultData();
     if (!data || !data.contacts) return false;
@@ -251,16 +245,7 @@ export async function deleteSecretContact(contactId) {
     return await saveVaultData(data);
 }
 
-// Vault holatini reset qilish (logout da)
+// ========== VAULT HOLATINI RESET QILISH ==========
 export function resetVaultState() {
     vaultUnlocked = false;
-}
-
-// Joriy foydalanuvchini olish (auth.js dan)
-let currentUser = null;
-export function setCurrentUser(user) {
-    currentUser = user;
-}
-export function getCurrentUser() {
-    return currentUser;
 }

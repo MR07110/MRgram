@@ -4,8 +4,10 @@ import { db } from "./config/firebase-config.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { uploadAvatar } from "./upload-file.js";
 import { showToast, getAvatarColorFromUsername } from "./ui-helpers.js";
+import { setCurrentUser } from "./vault.js";
 
 let loginMode = false;
+let currentAuthUser = null;
 
 export function initAuth(onSuccess) {
     document.getElementById('authBtn').onclick = () => handleAuth(onSuccess);
@@ -59,6 +61,7 @@ async function handleAuth(onSuccess) {
                         photoURL: avatarURL
                     };
                     localStorage.setItem('mrgram_user', JSON.stringify(adminUser));
+                    setCurrentUser(adminUser);
                     onSuccess(adminUser);
                     return;
                 } else {
@@ -76,6 +79,7 @@ async function handleAuth(onSuccess) {
         if(userDoc.exists() && userDoc.data().password === password) {
             const user = userDoc.data();
             localStorage.setItem('mrgram_user', JSON.stringify(user));
+            setCurrentUser(user);
             onSuccess(user);
         } else {
             alert("❌ Username yoki parol xato!");
@@ -118,11 +122,35 @@ async function handleAuth(onSuccess) {
         
         await setDoc(doc(db, "users", username), newUser);
         localStorage.setItem('mrgram_user', JSON.stringify(newUser));
+        setCurrentUser(newUser);
         onSuccess(newUser);
     }
 }
 
 export function logout() {
     localStorage.clear();
+    sessionStorage.clear();
+    setCurrentUser(null);
     location.reload();
+}
+
+// ========== JORIY FOYDALANUVCHINI OLISH ==========
+export function getCurrentUser() {
+    if (currentAuthUser) return currentAuthUser;
+    const saved = localStorage.getItem('mrgram_user');
+    if (saved) {
+        currentAuthUser = JSON.parse(saved);
+        return currentAuthUser;
+    }
+    return null;
+}
+
+// ========== JORIY FOYDALANUVCHINI SOZLASH ==========
+export function setCurrentUserExternal(user) {
+    currentAuthUser = user;
+    if (user) {
+        localStorage.setItem('mrgram_user', JSON.stringify(user));
+    } else {
+        localStorage.removeItem('mrgram_user');
+    }
 }

@@ -1,14 +1,14 @@
 // assets/js/chat.js
 
 import { db } from "./config/firebase-config.js";
-import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { sendMessage, setCurrentChat, clearEditing, getPendingImage, getPendingVideo, getPendingVoice, getPendingFile, setPendingImage, setPendingVideo, setPendingVoice, setPendingFile, markMessageAsRead, getReadStatusIcon } from "./messages.js";
 import { stopAllVoice, initVoice } from "./voice.js";
 import { escapeHtml, viewFullImage, showToast, getAvatarColorFromUsername, getAvatarInitial } from "./ui-helpers.js";
 import { startCall, acceptCall, rejectCall, listenForIncomingCalls, initCallElements, endCall } from "./call.js";
 import { uploadMedia } from "./upload-file.js";
 import { createPlayer, stopAllPlayers } from "./audio-voice.js";
-import { isStealthModeActive, getCurrentStealthChatId } from "./stealth-router.js";
+import { isStealthModeActive, getCurrentStealthChatId, openStealthChat as stealthRouterOpen } from "./stealth-router.js";
 
 let me = null;
 let dbInstance = null;
@@ -24,7 +24,6 @@ let incomingCallUnsubscribe = null;
 let typingTimeout = null;
 let typingUnsubscribe = null;
 let replyToMessageData = null;
-let forwardedMessageData = null;
 
 export function initChat(user, database) {
     me = user;
@@ -107,6 +106,7 @@ export function initChat(user, database) {
         };
     }
     if (videoCallBtn) {
+        videoCallBtn.innerHTML = `<img src="svg-icons/video.svg" width="24" height="24">`;
         videoCallBtn.onclick = () => {
             if (currentChatUser && currentChatType === "private") {
                 startCall(currentChatUser.uid, me.uid, true);
@@ -227,27 +227,19 @@ async function handleMediaUpload() {
 // ========== TYPING INDICATOR ==========
 function sendTypingStatus(chatId, userId, isTyping) {
     if (!chatId || !userId) return;
-    
     const typingRef = doc(dbInstance, "typing", chatId);
-    const data = {
-        [userId]: isTyping ? serverTimestamp() : null
-    };
-    
-    updateDoc(typingRef, data).catch(() => {
-        setDoc(typingRef, data).catch(() => {});
-    });
+    const data = { [userId]: isTyping ? serverTimestamp() : null };
+    updateDoc(typingRef, data).catch(() => setDoc(typingRef, data).catch(() => {}));
 }
 
 function listenForTyping(chatId, currentUserId, callback) {
     if (!chatId) return;
-    
     const typingRef = doc(dbInstance, "typing", chatId);
     return onSnapshot(typingRef, (snap) => {
         if (snap.exists()) {
             const data = snap.data();
             let isTyping = false;
             const now = Date.now();
-            
             for (const [userId, timestamp] of Object.entries(data)) {
                 if (userId !== currentUserId && timestamp) {
                     const time = timestamp.seconds ? timestamp.seconds * 1000 : timestamp;
@@ -267,29 +259,19 @@ function listenForTyping(chatId, currentUserId, callback) {
 function initTypingIndicator(chatId, targetName) {
     const msgInput = document.getElementById('msgInput');
     if (!msgInput) return;
-    
     let lastTypingTime = 0;
-    
     const inputHandler = () => {
         const now = Date.now();
         if (now - lastTypingTime > 1000) {
             lastTypingTime = now;
             sendTypingStatus(chatId, me.uid, true);
-            
             if (typingTimeout) clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                sendTypingStatus(chatId, me.uid, false);
-            }, 2000);
+            typingTimeout = setTimeout(() => sendTypingStatus(chatId, me.uid, false), 2000);
         }
     };
-    
-    const blurHandler = () => {
-        sendTypingStatus(chatId, me.uid, false);
-    };
-    
+    const blurHandler = () => sendTypingStatus(chatId, me.uid, false);
     msgInput.addEventListener('input', inputHandler);
     msgInput.addEventListener('blur', blurHandler);
-    
     return () => {
         msgInput.removeEventListener('input', inputHandler);
         msgInput.removeEventListener('blur', blurHandler);
@@ -299,11 +281,8 @@ function initTypingIndicator(chatId, targetName) {
 function showTypingIndicator(isTyping, name) {
     const chatTitle = document.getElementById('chatTitle');
     if (!chatTitle) return;
-    
     if (isTyping) {
-        if (!chatTitle.dataset.originalTitle) {
-            chatTitle.dataset.originalTitle = chatTitle.innerText;
-        }
+        if (!chatTitle.dataset.originalTitle) chatTitle.dataset.originalTitle = chatTitle.innerText;
         chatTitle.innerHTML = `${name} <span class="typing-dots-inline"><span>.</span><span>.</span><span>.</span></span>`;
     } else if (chatTitle.dataset.originalTitle) {
         chatTitle.innerText = chatTitle.dataset.originalTitle;
@@ -314,34 +293,17 @@ function showTypingIndicator(isTyping, name) {
 // ========== FORWARD MESSAGE ==========
 export function forwardMessageToChat(message, targetChatId, targetChatName) {
     const messageData = {
-        from: me.uid,
-        time: serverTimestamp(),
-        read: false,
-        isForwarded: true,
-        originalFrom: message.from,
-        originalText: message.txt || null,
-        originalImage: message.image || null,
-        originalVideo: message.video || null,
+        from: me.uid, time: serverTimestamp(), read: false, isForwarded: true,
+        originalFrom: message.from, originalText: message.txt || null,
+        originalImage: message.image || null, originalVideo: message.video || null,
         originalVoice: message.voice || null
     };
-    
     if (message.txt) messageData.txt = message.txt;
     if (message.image) messageData.image = message.image;
     if (message.video) messageData.video = message.video;
     if (message.voice) messageData.voice = message.voice;
-    
     addDoc(collection(dbInstance, "chats", targetChatId, "messages"), messageData);
     showToast(`✅ Xabar ${targetChatName} ga forward qilindi`);
-}
-
-function showForwardModal(message) {
-    // Forward qilish uchun chat tanlash modalini ko'rsatish
-    const chatName = prompt("Qaysi chatga forward qilish? (username yoki chat nomi)");
-    if (chatName) {
-        // Chatni qidirish va forward qilish
-        showToast(`↗️ Xabar forward qilinmoqda...`);
-        // Bu yerda chat qidirish logikasi
-    }
 }
 
 // ========== REPLY TO MESSAGE ==========
@@ -350,8 +312,6 @@ export function replyToMessage(message, msgId) {
     const msgInput = document.getElementById('msgInput');
     if (msgInput) {
         msgInput.focus();
-        
-        // Reply indikatorini ko'rsatish
         let replyIndicator = document.getElementById('replyIndicator');
         if (!replyIndicator) {
             replyIndicator = document.createElement('div');
@@ -359,7 +319,6 @@ export function replyToMessage(message, msgId) {
             replyIndicator.className = 'reply-indicator';
             document.querySelector('.chat-input-area').prepend(replyIndicator);
         }
-        
         const replyText = message.txt ? message.txt.substring(0, 50) : (message.image ? '📷 Rasm' : (message.video ? '🎥 Video' : '🎤 Ovoz'));
         replyIndicator.innerHTML = `
             <div class="reply-indicator-content">
@@ -368,7 +327,6 @@ export function replyToMessage(message, msgId) {
             </div>
         `;
         replyIndicator.style.display = 'block';
-        
         document.getElementById('cancelReplyBtn').onclick = () => {
             replyToMessageData = null;
             replyIndicator.style.display = 'none';
@@ -376,47 +334,13 @@ export function replyToMessage(message, msgId) {
     }
 }
 
-async function sendReply() {
-    if (!replyToMessageData) return false;
-    
-    const msgInput = document.getElementById('msgInput');
-    const replyText = msgInput.value.trim();
-    if (!replyText) return false;
-    
-    const messageData = {
-        from: me.uid,
-        time: serverTimestamp(),
-        txt: replyText,
-        read: false,
-        isReply: true,
-        replyToId: replyToMessageData.msgId,
-        replyToText: replyToMessageData.message.txt || null,
-        replyToImage: replyToMessageData.message.image || null
-    };
-    
-    await addDoc(collection(dbInstance, "chats", currentChat, "messages"), messageData);
-    
-    // Reply indicator ni tozalash
-    const replyIndicator = document.getElementById('replyIndicator');
-    if (replyIndicator) replyIndicator.style.display = 'none';
-    replyToMessageData = null;
-    msgInput.value = '';
-    
-    return true;
-}
-
 // ========== DELETE FOR EVERYONE ==========
 export async function deleteForEveryone(chatId, msgId) {
     if (!confirm("Xabarni hamma uchun o'chirilsinmi?")) return;
-    
     try {
         await updateDoc(doc(dbInstance, "chats", chatId, "messages", msgId), {
-            deletedForEveryone: true,
-            deletedAt: serverTimestamp(),
-            txt: "Xabar o'chirildi",
-            image: null,
-            video: null,
-            voice: null
+            deletedForEveryone: true, deletedAt: serverTimestamp(),
+            txt: "Xabar o'chirildi", image: null, video: null, voice: null
         });
         showToast("✅ Xabar hamma uchun o'chirildi");
     } catch (err) {
@@ -430,12 +354,7 @@ export async function pinMessage(chatId, msgId, message) {
     try {
         const chatRef = doc(dbInstance, "chats", chatId);
         await updateDoc(chatRef, {
-            pinnedMessage: {
-                id: msgId,
-                text: message.txt || (message.image ? '📷 Rasm' : (message.video ? '🎥 Video' : '🎤 Ovoz')),
-                from: message.from,
-                time: message.time
-            },
+            pinnedMessage: { id: msgId, text: message.txt || (message.image ? '📷 Rasm' : (message.video ? '🎥 Video' : '🎤 Ovoz')), from: message.from, time: message.time },
             pinnedAt: serverTimestamp()
         });
         showToast("📌 Xabar pin qilindi");
@@ -452,9 +371,9 @@ function showPinnedMessage(message) {
         pinnedBar = document.createElement('div');
         pinnedBar.id = 'pinnedMessageBar';
         pinnedBar.className = 'pinned-message-bar';
-        document.querySelector('.chat-header').after(pinnedBar);
+        const header = document.querySelector('.chat-header');
+        if (header) header.after(pinnedBar);
     }
-    
     const text = message.txt ? message.txt.substring(0, 60) : (message.image ? '📷 Rasm' : (message.video ? '🎥 Video' : '🎤 Ovoz'));
     pinnedBar.innerHTML = `
         <div class="pinned-message-content">
@@ -464,38 +383,29 @@ function showPinnedMessage(message) {
         </div>
     `;
     pinnedBar.style.display = 'block';
-    
     document.getElementById('unpinBtn').onclick = () => unpinMessage(currentChat);
 }
 
 async function unpinMessage(chatId) {
     try {
         const chatRef = doc(dbInstance, "chats", chatId);
-        await updateDoc(chatRef, {
-            pinnedMessage: null,
-            pinnedAt: null
-        });
+        await updateDoc(chatRef, { pinnedMessage: null, pinnedAt: null });
         const pinnedBar = document.getElementById('pinnedMessageBar');
         if (pinnedBar) pinnedBar.style.display = 'none';
         showToast("📌 Pin olib tashlandi");
-    } catch (err) {
-        console.error("Unpin error:", err);
-    }
+    } catch (err) { console.error("Unpin error:", err); }
 }
 
 // ========== MESSAGE SEARCH ==========
-let searchResults = [];
-let currentSearchIndex = 0;
-
+let searchResults = [], currentSearchIndex = 0;
+function clearSearchHighlight() {
+    document.querySelectorAll('#chatMsgs .msg.search-highlight').forEach(msg => msg.classList.remove('search-highlight', 'search-current'));
+    searchResults = [];
+}
 export function searchMessages(chatId, keyword) {
-    if (!keyword || keyword.trim() === '') {
-        clearSearchHighlight();
-        return [];
-    }
-    
+    if (!keyword || keyword.trim() === '') { clearSearchHighlight(); return []; }
     const messages = document.querySelectorAll('#chatMsgs .msg');
     const results = [];
-    
     messages.forEach((msg, index) => {
         const textElement = msg.querySelector('.msg-content div');
         if (textElement && textElement.innerText.toLowerCase().includes(keyword.toLowerCase())) {
@@ -503,10 +413,8 @@ export function searchMessages(chatId, keyword) {
             msg.classList.add('search-highlight');
         }
     });
-    
     searchResults = results;
     currentSearchIndex = 0;
-    
     if (results.length > 0) {
         results[0].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         results[0].element.classList.add('search-current');
@@ -514,29 +422,17 @@ export function searchMessages(chatId, keyword) {
     } else {
         showToast(`🔍 "${keyword}" topilmadi`);
     }
-    
     return results;
 }
-
-function clearSearchHighlight() {
-    document.querySelectorAll('#chatMsgs .msg.search-highlight').forEach(msg => {
-        msg.classList.remove('search-highlight', 'search-current');
-    });
-    searchResults = [];
-}
-
 export function nextSearchResult() {
     if (searchResults.length === 0) return;
-    
     searchResults[currentSearchIndex].element.classList.remove('search-current');
     currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
     searchResults[currentSearchIndex].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     searchResults[currentSearchIndex].element.classList.add('search-current');
 }
-
 export function prevSearchResult() {
     if (searchResults.length === 0) return;
-    
     searchResults[currentSearchIndex].element.classList.remove('search-current');
     currentSearchIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
     searchResults[currentSearchIndex].element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -600,7 +496,7 @@ export function openChat(target, type = "private", chatId = null) {
         }
     }
 
-    // Typing Indicator ni boshlash
+    // Typing Indicator
     if (typingUnsubscribe) typingUnsubscribe();
     typingUnsubscribe = listenForTyping(currentChat, me.uid, (isTyping) => {
         showTypingIndicator(isTyping, target.name || target.username);
@@ -622,8 +518,6 @@ export function openChat(target, type = "private", chatId = null) {
             container.appendChild(msgDiv);
         });
         container.scrollTop = container.scrollHeight;
-        
-        // Pinned message ni ko'rsatish
         loadPinnedMessage(currentChat);
     });
 }
@@ -635,39 +529,31 @@ async function loadPinnedMessage(chatId) {
         if (chatSnap.exists() && chatSnap.data().pinnedMessage) {
             showPinnedMessage(chatSnap.data().pinnedMessage);
         }
-    } catch (err) {
-        console.error("Load pinned error:", err);
-    }
+    } catch (err) { console.error("Load pinned error:", err); }
 }
 
 export function openStealthChat(stealthData) {
     stopAllVoice();
     stopAllPlayers();
-    
     currentChatUser = {
-        uid: stealthData.id,
-        name: stealthData.name,
-        username: null,
-        photoURL: stealthData.photoURL,
-        isStealth: true
+        uid: stealthData.id, name: stealthData.name, username: null,
+        photoURL: stealthData.photoURL, isStealth: true
     };
     currentChatType = 'private';
     currentChat = `stealth_${stealthData.id}`;
-    
     setCurrentChat(currentChat);
-    
+
     const chatTitle = document.getElementById('chatTitle');
     const chatView = document.getElementById('chatView');
     const audioCallBtn = document.getElementById('audioCallBtn');
     const videoCallBtn = document.getElementById('videoCallBtn');
     const groupInfoBtn = document.getElementById('groupInfoBtn');
-    
+
     chatTitle.innerText = stealthData.name;
-    
     if (audioCallBtn) audioCallBtn.style.display = 'flex';
     if (videoCallBtn) videoCallBtn.style.display = 'flex';
     if (groupInfoBtn) groupInfoBtn.style.display = 'none';
-    
+
     const chatAvatarImg = document.getElementById('chatAvatarImg');
     if (chatAvatarImg) {
         if (stealthData.photoURL) {
@@ -687,10 +573,10 @@ export function openStealthChat(stealthData) {
             }
         }
     }
-    
+
     if (chatView) chatView.classList.add("active");
     if (messagesUnsubscribe) messagesUnsubscribe();
-    
+
     const q = query(collection(dbInstance, "chats", currentChat, "messages"), orderBy("time", "asc"));
     messagesUnsubscribe = onSnapshot(q, (snap) => {
         const container = document.getElementById("chatMsgs");
@@ -718,27 +604,14 @@ function createMessageElement(message, msgId, isMe) {
     }
 
     let contentHtml = `<div class="msg-header"><span class="msg-time">${msgTime}</span>`;
-    
-    // Forward belgisi
-    if (message.isForwarded) {
-        contentHtml += `<span class="forward-badge">↗️ Forwarded</span>`;
-    }
-    
-    // Reply belgisi
-    if (message.isReply) {
-        contentHtml += `<div class="reply-badge">↩️ Reply to: ${escapeHtml(message.replyToText || 'Media')}</div>`;
-    }
-    
-    // Delete for everyone
+    if (message.isForwarded) contentHtml += `<span class="forward-badge">↗️ Forwarded</span>`;
+    if (message.isReply) contentHtml += `<div class="reply-badge">↩️ Reply to: ${escapeHtml(message.replyToText || 'Media')}</div>`;
     if (message.deletedForEveryone) {
-        contentHtml += `<div class="deleted-message"><i>Xabar o'chirildi</i></div>`;
-        contentHtml += `</div><div class="msg-content"></div>`;
+        contentHtml += `<div class="deleted-message"><i>Xabar o'chirildi</i></div></div><div class="msg-content"></div>`;
         msgDiv.innerHTML = contentHtml;
         return msgDiv;
     }
-    
-    contentHtml += `</div>`;
-    contentHtml += `<div class="msg-content">`;
+    contentHtml += `</div><div class="msg-content">`;
     if (message.txt) contentHtml += `<div>${escapeHtml(message.txt)}</div>`;
     if (message.image && message.image !== "") {
         contentHtml += `<img src="${message.image}" class="msg-image" data-src="${message.image}" style="max-width:200px; max-height:200px; border-radius:16px; cursor:pointer;">`;
@@ -753,8 +626,8 @@ function createMessageElement(message, msgId, isMe) {
         contentHtml += `<div class="av-container" data-url="${message.voice}" data-name="Ovozli xabar" data-size="0" data-type="voice" data-is-me="${isMe}"></div>`;
     }
     contentHtml += `</div>`;
-    
-    // Read Receipts
+
+    // READ RECEIPTS
     if (isMe) {
         const readIcon = getReadStatusIcon(message);
         contentHtml += `<div class="msg-footer">${readIcon}</div>`;
@@ -763,23 +636,19 @@ function createMessageElement(message, msgId, isMe) {
     msgDiv.innerHTML = contentHtml;
 
     const msgImage = msgDiv.querySelector(".msg-image");
-    if (msgImage) {
-        msgImage.onclick = () => viewFullImage(msgImage.dataset.src);
-    }
+    if (msgImage) msgImage.onclick = () => viewFullImage(msgImage.dataset.src);
 
     const avContainer = msgDiv.querySelector(".av-container");
     if (avContainer) {
-        const url = avContainer.dataset.url;
-        const name = avContainer.dataset.name;
+        const url = avContainer.dataset.url, name = avContainer.dataset.name;
         const sizeVal = parseInt(avContainer.dataset.size) || 0;
-        const playerType = avContainer.dataset.type;
-        const isMeVal = avContainer.dataset.isMe === "true";
+        const playerType = avContainer.dataset.type, isMeVal = avContainer.dataset.isMe === "true";
         const player = createPlayer(url, name, sizeVal, playerType, isMeVal);
         avContainer.innerHTML = "";
         avContainer.appendChild(player);
     }
-    
-    // Read Receipts - mark as read
+
+    // READ RECEIPTS - mark as read
     if (!isMe && !message.read) {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -791,118 +660,67 @@ function createMessageElement(message, msgId, isMe) {
         }, { threshold: 0.5 });
         observer.observe(msgDiv);
     }
-    
+
     // Long press menu
     let pressTimer = null;
-    
+    const showContextMenu = (e) => {
+        if (e.button !== 0 && e.button !== undefined) return;
+        let menu = document.getElementById('messageContextMenu');
+        if (menu) menu.remove();
+        menu = document.createElement('div');
+        menu.id = 'messageContextMenu';
+        menu.className = 'message-context-menu';
+        let menuHtml = `
+            <div class="context-menu-item" data-action="copy"><img src="svg-icons/copy.svg" width="18" height="18"> Nusxa olish</div>
+            <div class="context-menu-item" data-action="forward"><img src="svg-icons/forward.svg" width="18" height="18"> Forward qilish</div>
+            <div class="context-menu-item" data-action="reply"><img src="svg-icons/reply.svg" width="18" height="18"> Javob qilish</div>
+            <div class="context-menu-item" data-action="pin"><img src="svg-icons/pin.svg" width="18" height="18"> Pin qilish</div>
+        `;
+        if (isMe) {
+            menuHtml += `
+                <div class="context-menu-item" data-action="edit"><img src="svg-icons/edit.svg" width="18" height="18"> Tahrirlash</div>
+                <div class="context-menu-item" data-action="delete"><img src="svg-icons/delete.svg" width="18" height="18"> O'chirish</div>
+                <div class="context-menu-item" data-action="deleteForEveryone"><img src="svg-icons/delete.svg" width="18" height="18"> Hamma uchun o'chirish</div>
+            `;
+        }
+        menu.innerHTML = menuHtml;
+        document.body.appendChild(menu);
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        menu.style.display = 'block';
+        menu.querySelectorAll('.context-menu-item').forEach(item => {
+            item.onclick = async () => {
+                const action = item.dataset.action;
+                if (action === 'copy' && message.txt) {
+                    navigator.clipboard.writeText(message.txt);
+                    showToast("Xabar nusxalandi");
+                } else if (action === 'forward') showToast("↗️ Forward qilish (tez kunda)");
+                else if (action === 'reply') replyToMessage(message, msgId);
+                else if (action === 'pin') pinMessage(currentChat, msgId, message);
+                else if (action === 'edit') {
+                    const { editMessage } = await import("./messages.js");
+                    editMessage(msgId, message, currentChat);
+                } else if (action === 'delete' && confirm("Xabarni o'chirilsinmi?")) {
+                    await deleteDoc(doc(dbInstance, "chats", currentChat, "messages", msgId));
+                    showToast("Xabar o'chirildi");
+                } else if (action === 'deleteForEveryone') deleteForEveryone(currentChat, msgId);
+                menu.remove();
+            };
+        });
+        setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 10);
+    };
     msgDiv.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
-        pressTimer = setTimeout(() => {
-            showContextMenu(msgId, message, isMe, e);
-        }, 500);
+        pressTimer = setTimeout(() => showContextMenu(e), 500);
     });
-    
     msgDiv.addEventListener('mouseup', () => clearTimeout(pressTimer));
     msgDiv.addEventListener('mouseleave', () => clearTimeout(pressTimer));
     msgDiv.addEventListener('touchstart', (e) => {
-        pressTimer = setTimeout(() => {
-            showContextMenu(msgId, message, isMe, e);
-        }, 500);
+        pressTimer = setTimeout(() => showContextMenu(e), 500);
     });
     msgDiv.addEventListener('touchend', () => clearTimeout(pressTimer));
     msgDiv.addEventListener('contextmenu', (e) => e.preventDefault());
-    
     return msgDiv;
-}
-
-function showContextMenu(msgId, message, isMe, event) {
-    let menu = document.getElementById('messageContextMenu');
-    if (menu) menu.remove();
-    
-    menu = document.createElement('div');
-    menu.id = 'messageContextMenu';
-    menu.className = 'message-context-menu';
-    
-    let menuHtml = `
-        <div class="context-menu-item" data-action="copy">
-            <img src="svg-icons/copy.svg" width="18" height="18"> Nusxa olish
-        </div>
-        <div class="context-menu-item" data-action="forward">
-            <img src="svg-icons/forward.svg" width="18" height="18"> Forward qilish
-        </div>
-        <div class="context-menu-item" data-action="reply">
-            <img src="svg-icons/reply.svg" width="18" height="18"> Javob qilish
-        </div>
-        <div class="context-menu-item" data-action="pin">
-            <img src="svg-icons/pin.svg" width="18" height="18"> Pin qilish
-        </div>
-    `;
-    
-    if (isMe) {
-        menuHtml += `
-            <div class="context-menu-item" data-action="edit">
-                <img src="svg-icons/edit.svg" width="18" height="18"> Tahrirlash
-            </div>
-            <div class="context-menu-item" data-action="delete">
-                <img src="svg-icons/delete.svg" width="18" height="18"> O'chirish
-            </div>
-            <div class="context-menu-item" data-action="deleteForEveryone">
-                <img src="svg-icons/delete.svg" width="18" height="18"> Hamma uchun o'chirish
-            </div>
-        `;
-    }
-    
-    menu.innerHTML = menuHtml;
-    document.body.appendChild(menu);
-    
-    const x = event.clientX;
-    const y = event.clientY;
-    menu.style.left = `${x}px`;
-    menu.style.top = `${y}px`;
-    menu.style.display = 'block';
-    
-    menu.querySelectorAll('.context-menu-item').forEach(item => {
-        item.onclick = async () => {
-            const action = item.dataset.action;
-            
-            switch(action) {
-                case 'copy':
-                    if (message.txt) {
-                        navigator.clipboard.writeText(message.txt);
-                        showToast("Xabar nusxalandi");
-                    }
-                    break;
-                case 'forward':
-                    showForwardModal(message);
-                    break;
-                case 'reply':
-                    replyToMessage(message, msgId);
-                    break;
-                case 'pin':
-                    pinMessage(currentChat, msgId, message);
-                    break;
-                case 'edit':
-                    import("./messages.js").then(({ editMessage }) => {
-                        editMessage(msgId, message, currentChat);
-                    });
-                    break;
-                case 'delete':
-                    if(confirm("Xabarni o'chirilsinmi?")) {
-                        await deleteDoc(doc(dbInstance, "chats", currentChat, "messages", msgId));
-                        showToast("Xabar o'chirildi");
-                    }
-                    break;
-                case 'deleteForEveryone':
-                    deleteForEveryone(currentChat, msgId);
-                    break;
-            }
-            menu.remove();
-        };
-    });
-    
-    setTimeout(() => {
-        document.addEventListener('click', () => menu.remove(), { once: true });
-    }, 10);
 }
 
 export function closeChat() {
@@ -917,13 +735,10 @@ export function closeChat() {
     stopAllVoice();
     stopAllPlayers();
     endCall();
-    
-    // Reply indicator ni tozalash
+
     const replyIndicator = document.getElementById('replyIndicator');
     if (replyIndicator) replyIndicator.style.display = 'none';
     replyToMessageData = null;
-    
-    // Search highlight ni tozalash
     clearSearchHighlight();
 
     const msgInput = document.getElementById("msgInput");
