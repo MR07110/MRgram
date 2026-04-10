@@ -320,7 +320,7 @@ function startApp() {
     if (settingsBtn) settingsBtn.onclick = openSettings;
 
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-    if (closeSettingsBtn) closeSettingsBtn.onclick = closeSettings;
+    if (() => console.log("Settings close disabled")Btn) closeSettingsBtn.onclick = closeSettings;
 
     // Notification ruxsat so'rash
     setTimeout(async () => {
@@ -537,7 +537,7 @@ function openSettings() {
     }
 }
 
-function closeSettings() { 
-    const settingsView = document.getElementById('settingsView');
-    if (settingsView) settingsView.style.display = 'none'; 
-}
+//function closeSettings() { 
+//    const settingsView = document.getElementById('settingsView');
+//    if (settingsView) settingsView.style.display = 'none'; 
+//}
