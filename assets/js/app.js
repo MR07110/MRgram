@@ -320,7 +320,7 @@ function startApp() {
     if (settingsBtn) settingsBtn.onclick = openSettings;
 
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-    if (() => console.log("Settings close disabled")Btn) closeSettingsBtn.onclick = closeSettings;
+    if (closeSettingsBtn) closeSettingsBtn.onclick = () => console.log("Settings close disabled");
 
     // Notification ruxsat so'rash
     setTimeout(async () => {
