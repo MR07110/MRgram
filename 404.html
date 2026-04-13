@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MRgram - Aloqa uzildi</title>
+    <title>MRgram - Aqlli Qidiruv</title>
     <style>
         :root {
             --primary-blue: #0088cc;
@@ -60,15 +60,17 @@
             font-size: 1.1rem; 
             color: var(--text-muted);
             margin-bottom: 2rem;
+            min-height: 3em;
         }
 
         .timer-box {
-            background: rgba(0, 136, 204, 0.05);
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-size: 0.9rem;
+            background: rgba(0, 136, 204, 0.08);
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 1rem;
             color: var(--primary-blue);
             font-weight: 600;
+            border: 1px solid rgba(0, 136, 204, 0.1);
         }
 
         .btn-back {
@@ -88,6 +90,8 @@
             background-color: var(--hover-blue);
             transform: translateY(-3px);
         }
+
+        strong { color: #005580; }
     </style>
 </head>
 <body>
@@ -98,33 +102,87 @@
         </div>
         
         <h1 class="title">ALOQA UZILDI</h1>
-        <p class="subtitle">Siz qidirayotgan manzil koinotda adashib qoldi.</p>
+        <p class="subtitle" id="status-msg">Siz qidirayotgan manzil koinotda adashib qoldi.</p>
 
         <div class="timer-box" id="timer-display">
-            10 soniyadan so'ng asosiy sahifaga qaytasiz...
+            10 soniyadan so'ng tizimga qaytasiz...
         </div>
 
         <a href="https://mrgram.vercel.app" class="btn-back">Hozir qaytish</a>
     </div>
 
     <script>
-        let timeLeft = 10;
-        const display = document.getElementById('timer-display');
+        // SMART REDIRECT DATABASE
+    const dictionary = {
+        'chats': [
+            'chat', 'cahts', 'chast', 'cvaht', 'chaat', 'shats', 'chays', 'chatz', 'vhats', 'chatsy', 
+            'chatss', 'xats', 'shat', 'chast', 'chata', 'chtes', 'chast', 'chats1', 'chays', 'cjats', 
+            'chsts', 'cgats', 'vhats', 'xhats', 'chatsq', 'chatsw', 'chatsde', 'chatss', 'chatt', 'chwt', 
+            'chatx', 'chatc', 'cyats', 'chatsu', 'chatsi', 'chatso', 'chast', 'chatzz', 'chattz', 'chataz', 
+            'chatsss', 'chatsm', 'chatsn', 'chastb', 'chataas', 'chatsss', 'chssts', 'vhats', 'c-h-a-t-s', 'chats0'
+        ],
+        
+        'channels': [
+            'channel', 'chanel', 'shannels', 'channrls', 'channals', 'channrll', 'vannels', 'chanels', 'chaneel', 'cannels', 
+            'kanallar', 'kanal', 'cannell', 'channl', 'channle', 'channal', 'chennels', 'chenel', 'chenal', 'shannel', 
+            'shannil', 'channles', 'chanells', 'channele', 'channell', 'channlss', 'channels1', 'channrl', 'xhannels', 'vhannels', 
+            'channlse', 'chaneels', 'chanenl', 'chanelll', 'channells', 'cannal', 'cannalss', 'channlels', 'chanelsz', 'chanelsq', 
+            'channals', 'chanelsw', 'chaneel', 'channale', 'channle', 'cannl', 'channels0', 'channls', 'channle', 'channells'
+        ],
+        
+        'groups': [
+            'group', 'grups', 'groops', 'grops', 'grouos', 'grouls', 'grrups', 'hroups', 'froups', 'groupp', 
+            'gurux', 'guruh', 'grupa', 'gruppa', 'groop', 'grooups', 'groupps', 'grouo', 'grrops', 'grruops', 
+            'vroups', 'troups', 'grous', 'grousp', 'groupss', 'groupps', 'grouop', 'gropus', 'gropu', 'groupe', 
+            'grouppa', 'gruup', 'gruups', 'gropps', 'groppu', 'grpups', 'grrupps', 'groyps', 'grpups', 'gropus', 
+            'grouups', 'grouls', 'grous', 'grouppz', 'groups1', 'groups0', 'grops', 'groupps', 'grups', 'grrps'
+        ],
+        
+        'settings': [
+            'setting', 'setings', 'sttings', 'seting', 'settins', 'settngs', 'drttings', 'aetings', 'settig', 'setingz', 
+            'sozlamalar', 'nastroyka', 'settng', 'settin', 'seting', 'stting', 'seetings', 'settimgs', 'setongs', 'settimgs', 
+            'settinfs', 'settinngs', 'settinngs', 'setingsz', 'settins', 'settngs', 'stings', 'sertings', 'serings', 'settinns', 
+            'settng', 'settig', 'settins', 'sttings', 'settingsq', 'settingsw', 'settingse', 'settings1', 'settings0', 'settingz', 
+            'seting', 'setingss', 'setttings', 'settinng', 'settimg', 'setinngs', 'sttngs', 'settinngs', 'settigs', 'setttings'
+        ]
+    };
 
-        // Har soniyada ekrandagi raqamni yangilash
+        const currentPath = window.location.pathname.replace('/', '').toLowerCase();
+        const display = document.getElementById('timer-display');
+        const statusMsg = document.getElementById('status-msg');
+        
+        let finalTarget = "https://mrgram.vercel.app"; // Default
+        let suggestedName = "";
+
+        // Analiz qilish
+        for (const [key, typos] of Object.entries(dictionary)) {
+            if (typos.includes(currentPath) || currentPath.startsWith(key.substring(0, 3))) {
+                finalTarget = `https://mrgram.vercel.app/${key}`;
+                suggestedName = key.charAt(0).toUpperCase() + key.slice(1);
+                break;
+            }
+        }
+
+        // Matnni yangilash
+        if (suggestedName) {
+            statusMsg.innerHTML = `Ehtimol, siz <strong>${suggestedName}</strong> bo'limiga kirmoqchi edingiz?`;
+        }
+
+        let timeLeft = 10;
         const countdown = setInterval(() => {
             timeLeft--;
             if (timeLeft > 0) {
-                display.innerText = `${timeLeft} soniyadan so'ng asosiy sahifaga qaytasiz...`;
+                display.innerHTML = `<strong>${timeLeft}</strong> soniyadan so'ng yo'naltirilasiz...`;
             } else {
-                display.innerText = "Yo'naltirilmoqda...";
+                display.innerText = "Ulanmoqda...";
                 clearInterval(countdown);
+                window.location.href = finalTarget;
             }
         }, 1000);
 
-        // 10 soniyadan keyin to'liq URL-ga o'tish
+        // 10 soniyadan keyin avtomatik o'tish
         setTimeout(() => {
-            window.location.href = "https://mrgram.vercel.app";
+            window.location.href = finalTarget;
         }, 10000);
     </script>
 </body>
