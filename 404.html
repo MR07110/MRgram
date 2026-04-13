@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRgram - Aloqa uzildi</title>
+    <style>
+        :root {
+            --primary-blue: #0088cc;
+            --hover-blue: #0077b5;
+            --text-dark: #445566;
+            --text-muted: #7f919d;
+            --bg-gradient: linear-gradient(135deg, #f5faff 0%, #e8f4ff 100%);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            color: var(--text-dark);
+        }
+
+        /* Glitch animatsiyasi */
+        @keyframes containerJump {
+            0%, 92%, 100% { transform: translate(0); }
+            93% { transform: translate(-3px, 2px); }
+            95% { transform: translate(3px, -2px); }
+        }
+
+        /* Asosiy konteyner */
+        .error-wrapper {
+            width: 95%;
+            max-width: 600px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .status-badge {
+            background: rgba(0, 136, 204, 0.1);
+            color: var(--primary-blue);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            letter-spacing: 1px;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 500px; /* Desktop uchun */
+            animation: containerJump 4s steps(1) infinite;
+        }
+
+        /* Responsive o'lchamlar */
+        @media (max-width: 768px) {
+            .svg-container { max-width: 400px; } /* Tablet */
+            .title { font-size: 24px; }
+        }
+
+        @media (max-width: 480px) {
+            .svg-container { max-width: 300px; } /* Mobile */
+            .title { font-size: 20px; }
+            .subtitle { font-size: 15px; }
+            .status-badge { font-size: 0.65rem; }
+        }
+
+        hr {
+            width: 50%;
+            border: 0;
+            border-top: 1.5px solid #ddecff;
+            margin: 2rem 0;
+        }
+
+        .title { 
+            font-size: 2rem; 
+            font-weight: 800; 
+            color: var(--primary-blue);
+            margin: 0; 
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+
+        .error-code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #a0b0bb;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .subtitle { 
+            font-size: 1.1rem; 
+            color: var(--text-muted); 
+            margin-top: 1.5rem;
+            line-height: 1.6;
+        }
+
+        /* Ma'lumotlar bloki */
+        .tips-container {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #8899aa;
+            text-align: left;
+            width: 100%;
+            max-width: 320px;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px 20px;
+            border-radius: 15px;
+        }
+
+        .tips-container ul {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+        }
+
+        .tips-container li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .tips-container li::before {
+            content: "•";
+            color: var(--primary-blue);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-top: 2.5rem;
+            padding: 16px 40px;
+            background-color: var(--primary-blue);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 136, 204, 0.2);
+            font-size: 1rem;
+        }
+
+        .btn-back:hover {
+            background-color: var(--hover-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 136, 204, 0.3);
+        }
+
+        @media (max-width: 350px) {
+            .btn-back { padding: 12px 25px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="error-wrapper">
+        <div class="status-badge">Tizim xatosi aniqlandi</div>
+
+        <div class="svg-container">
+            <img src="404.svg" alt="404 Error" style="width: 100%; height: auto;">
+        </div>
+        
+        <hr>
+
+        <h1 class="title">ALOQA UZILDI</h1>
+        <span class="error-code">ERROR_ID: MRGRAM_404_STUB</span>
+        
+        <p class="subtitle">
+            Siz qidirayotgan manzil koinot qa'riga singib ketgan ko'rinadi.
+        </p>
+
+        <div class="tips-container">
+            <strong>Nima qilish mumkin?</strong>
+            <ul>
+                <li>Havola yozilishini tekshiring.</li>
+                <li>Internet aloqangizni ko'ring.</li>
+                <li>Muhammadrasulga xabar bering.</li>
+            </ul>
+        </div>
+
+        <a href="https://mrgram.vercel.app" class="btn-back">Chatlarga qaytish</a>
+    </div>
+
+</body>
+</html>
